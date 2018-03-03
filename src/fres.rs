@@ -6,6 +6,7 @@ use std::io::SeekFrom;
 use std::collections::HashMap;
 use error::WrongMagicNumber;
 use error::NoEntryForKey;
+use util::RelativePointer;
 
 pub struct FRESFile {
     pub header: FRESHeader,
@@ -20,11 +21,10 @@ pub struct FRESHeader {
     pub header_length: u16,
     pub file_length: u32,
     pub file_alignment: u32,
-    pub file_name_offset: i32,
+    pub file_name_offset: RelativePointer,
     pub string_table_length: i32,
-    pub string_table_offset: i32,
-    pub meta_sub_file_index_groups_offsets_positions: [u64; 12],
-    pub sub_file_index_groups_offsets: [i32; 12],
+    pub string_table_offset: RelativePointer,
+    pub sub_file_index_groups_offsets: [RelativePointer; 12],
     pub sub_file_index_groups_entry_counts: [u16; 12],
     pub user_pointer: u32
 }
@@ -51,12 +51,11 @@ pub enum SubFileType {
 }
 
 pub struct SubFileIndexGroupEntry {
-    pub meta_absolute_pos: u64,  // Makes my life about ten times easier
     pub search_value: u32,
     pub left_index: u16,
     pub right_index: u16,
-    pub name_pointer: i32,
-    pub data_pointer: i32
+    pub name_pointer: RelativePointer,
+    pub data_pointer: RelativePointer
 }
 
 pub struct SubFileInfo {
@@ -81,12 +80,12 @@ impl FRESFile {
         for sub_file_index_group in &self.sub_file_index_groups {
             let file_type = &sub_file_index_group.file_type;
             for entry in &sub_file_index_group.entries {
-                let name_pos = entry.meta_absolute_pos + 8 + entry.name_pointer as u64;
+                let name_pos = entry.name_pointer.absolute_position()?;
                 let name = match self.string_map.get(&name_pos) {
                     None => return Err(Box::new(NoEntryForKey{})),
                     Some(name) => name
                 };
-                let data_pos = entry.meta_absolute_pos + 12 + entry.data_pointer as u64;
+                let data_pos = entry.data_pointer.absolute_position()?;
                 sub_file_info.push(SubFileInfo {
                     name: name.clone(),
                     file_type: file_type.clone(),
@@ -100,36 +99,56 @@ impl FRESFile {
 
 impl FRESHeader {
     pub fn read<R: Read + Seek>(reader: &mut R) -> Result<FRESHeader, Box<Error>> {
+        // Magic Number
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
         if magic_number != [b'F', b'R', b'E', b'S'] {
             return Err(Box::new(WrongMagicNumber{}))
         }
+        // Version
         let version = reader.read_be_to_u32()?;
+        // Byte Order Mark
         let bom = reader.read_be_to_u16()?;
         if bom != 0xFEFF {
             // Not supposed to see little-endian on the console, returning error here for convenience
             return Err(Box::new(WrongMagicNumber{}))
         }
+        // Header Length
         let header_length = reader.read_be_to_u16()?;
         if header_length != 0x0010 {
             return Err(Box::new(WrongMagicNumber{}))
         }
+        // File Length
         let file_length = reader.read_be_to_u32()?;
+        // File Alignment
         let file_alignment = reader.read_be_to_u32()?;
-        let file_name_offset = reader.read_be_to_i32()?;
+        // File Name Offset
+        let file_name_offset = RelativePointer {
+            location: reader.seek(SeekFrom::Current(0))?,
+            points_to: i64::from(reader.read_be_to_i32()?)
+        };
+        // String Table Length
         let string_table_length = reader.read_be_to_i32()?;
-        let string_table_offset = reader.read_be_to_i32()?;
-        let mut file_offsets = [0i32; 12];
-        let mut meta_sub_file_index_groups_offsets_positions = [0u64; 12];
-        for id in 0..12 {
-            meta_sub_file_index_groups_offsets_positions[id] = reader.seek(SeekFrom::Current(0))?;
-            file_offsets[id] = reader.read_be_to_i32()?;
+        // String Table Offset
+        let string_table_offset = RelativePointer {
+            location: reader.seek(SeekFrom::Current(0))?,
+            points_to: i64::from(reader.read_be_to_i32()?)
+        };
+        // File Offsets
+        let mut file_offsets: [RelativePointer; 12] = [ RelativePointer {
+            location: 0,
+            points_to: 0
+        }; 12];
+        for ptr in &mut file_offsets {
+            ptr.location = reader.seek(SeekFrom::Current(0))?;
+            ptr.points_to = i64::from(reader.read_be_to_i32()?);
         }
+        // File Counts
         let mut file_counts = [0u16; 12];
         for data in &mut file_counts {
             *data = reader.read_be_to_u16()?;
         }
+        // User Pointer
         let user_pointer = reader.read_be_to_u32()?;
         Ok(FRESHeader {
             magic_number,
@@ -141,7 +160,6 @@ impl FRESHeader {
             file_name_offset,
             string_table_length,
             string_table_offset,
-            meta_sub_file_index_groups_offsets_positions,
             sub_file_index_groups_offsets: file_offsets,
             sub_file_index_groups_entry_counts: file_counts,
             user_pointer
@@ -151,7 +169,7 @@ impl FRESHeader {
 
 fn read_string_map<R: Read + Seek>(header: &FRESHeader, reader: &mut R) -> Result<HashMap<u64, String>, Box<Error>> {
     let mut string_table: HashMap<u64, String> = HashMap::new();
-    let string_table_absolute_pos = 0x1Cu64 + header.string_table_offset as u64;
+    let string_table_absolute_pos = header.string_table_offset.absolute_position()?;
     let string_table_end_absolute_pos = string_table_absolute_pos + header.string_table_length as u64;
     reader.seek(SeekFrom::Start(string_table_absolute_pos))?;
     while reader.seek(SeekFrom::Current(0))? < string_table_end_absolute_pos {
@@ -187,14 +205,18 @@ impl SubFileIndexGroup {
 
 impl SubFileIndexGroupEntry {
     pub fn read<R: Read + Seek>(reader: &mut R) -> Result<SubFileIndexGroupEntry, Box<Error>> {
-        let meta_absolute_pos = reader.seek(SeekFrom::Current(0))?;
         let search_value = reader.read_be_to_u32()?;
         let left_index = reader.read_be_to_u16()?;
         let right_index = reader.read_be_to_u16()?;
-        let name_pointer = reader.read_be_to_i32()?;
-        let data_pointer = reader.read_be_to_i32()?;
+        let name_pointer = RelativePointer {
+            location: reader.seek(SeekFrom::Current(0))?,
+            points_to: i64::from(reader.read_be_to_i32()?)
+        };
+        let data_pointer = RelativePointer {
+            location: reader.seek(SeekFrom::Current(0))?,
+            points_to: i64::from(reader.read_be_to_i32()?)
+        };
         Ok(SubFileIndexGroupEntry {
-            meta_absolute_pos,
             search_value,
             left_index,
             right_index,
@@ -215,9 +237,8 @@ fn align_on_4_bytes<R: Read + Seek>(reader: &mut R) -> Result<(), Box<Error>> {
 fn read_sub_file_index_groups<R: Read + Seek>(header: &FRESHeader, reader: &mut R) -> Result<Vec<SubFileIndexGroup>, Box<Error>> {
     let mut sub_file_index_groups: Vec<SubFileIndexGroup> = Vec::new();
     for id in 0..12 {
-        if header.sub_file_index_groups_offsets[id] != 0 {
-            let actual_offset = header.sub_file_index_groups_offsets[id] as u64 + header.meta_sub_file_index_groups_offsets_positions[id];
-            reader.seek(SeekFrom::Start(actual_offset))?;
+        if header.sub_file_index_groups_offsets[id].points_to != 0 {
+            reader.seek(SeekFrom::Start(header.sub_file_index_groups_offsets[id].absolute_position()?))?;
             sub_file_index_groups.push(
                 SubFileIndexGroup {
                     file_type: match id {

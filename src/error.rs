@@ -32,3 +32,18 @@ impl Display for NoEntryForKey {
         write!(f, "Yea error lol")
     }
 }
+
+#[derive(Debug)]
+pub struct RelativePointerDataInvalid;
+
+impl Error for RelativePointerDataInvalid {
+    fn description(&self) -> &str {
+        "Self Explanatory"
+    }
+}
+
+impl Display for RelativePointerDataInvalid {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "Yea error lol")
+    }
+}

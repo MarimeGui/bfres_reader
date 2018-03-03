@@ -1,6 +1,7 @@
 extern crate ez_io;
 
 mod error;
+mod util;
 pub mod fres;
 pub mod ftex;
 

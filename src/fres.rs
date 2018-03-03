@@ -7,10 +7,10 @@ use std::collections::HashMap;
 use error::WrongMagicNumber;
 use error::NoEntryForKey;
 
-pub fn get_sub_file_info(file: FRESFile) -> Result<Vec<SubFileInfo>, Box<Error>> {
+pub fn get_sub_file_info(file: &FRESFile) -> Result<Vec<SubFileInfo>, Box<Error>> {
     let mut sub_file_info: Vec<SubFileInfo> = Vec::new();
     let mut s_f_i_g_index = 0;
-    for s_f_i_g_offset in file.header.sub_file_index_groups_offsets.iter() {
+    for s_f_i_g_offset in &file.header.sub_file_index_groups_offsets {
         if *s_f_i_g_offset != 0 {
             for entry in match file.sub_file_index_groups[s_f_i_g_index] {
                 SubFileIndexGroup::ModelData(ref a) => a,
@@ -92,6 +92,7 @@ impl FRESHeader {
         let version = reader.read_be_to_u32()?;
         let bom = reader.read_be_to_u16()?;
         if bom != 0xFEFF {
+            // Not supposed to see little-endian on the console, returning error here for convenience
             return Err(Box::new(WrongMagicNumber{}))
         }
         let header_length = reader.read_be_to_u16()?;
@@ -104,12 +105,12 @@ impl FRESHeader {
         let string_table_length = reader.read_be_to_i32()?;
         let string_table_offset = reader.read_be_to_i32()?;
         let mut file_offsets = [0i32; 12];
-        for id in 0..12 {
-            file_offsets[id] = reader.read_be_to_i32()?;
+        for data in &mut file_offsets {
+            *data = reader.read_be_to_i32()?;
         }
         let mut file_counts = [0u16; 12];
-        for id in 0..12 {
-            file_counts[id] = reader.read_be_to_u16()?;
+        for data in &mut file_counts {
+            *data = reader.read_be_to_u16()?;
         }
         let user_pointer = reader.read_be_to_u32()?;
         Ok(FRESHeader {
@@ -158,7 +159,7 @@ fn align_on_4_bytes<R: Read + Seek>(reader: &mut R) -> Result<(), Box<Error>> {
 fn read_sub_file_index_groups<R: Read + Seek>(header: &FRESHeader, reader: &mut R) -> Result<Vec<SubFileIndexGroup>, Box<Error>> {
     let mut sub_file_index_groups: Vec<SubFileIndexGroup> = Vec::new();
     let mut index = 0;
-    for offset in header.sub_file_index_groups_offsets.iter() {
+    for offset in &header.sub_file_index_groups_offsets {
         if *offset != 0 {
             reader.seek(SeekFrom::Start(0x20 + ((index*4) as u64) + (*offset as u64)))?;
             sub_file_index_groups.push(match index {
@@ -184,8 +185,8 @@ fn read_sub_file_index_groups<R: Read + Seek>(header: &FRESHeader, reader: &mut 
 
 fn read_sub_file_index_group<R: Read + Seek>(nb_entries: u16, reader: &mut R) -> Result<Vec<SubFileIndexGroupEntry>, Box<Error>> {
     let mut sub_file_index_group_entries: Vec<SubFileIndexGroupEntry> = Vec::new();
-    let end_of_group_absolute_pos = reader.read_be_to_u32()? as u64 + reader.seek(SeekFrom::Current(0))?;
-    if nb_entries as i32 != reader.read_be_to_i32()? {
+    let end_of_group_absolute_pos = u64::from(reader.read_be_to_u32()?) + reader.seek(SeekFrom::Current(0))?;
+    if i32::from(nb_entries) != reader.read_be_to_i32()? {
         panic!();
     }
     reader.seek(SeekFrom::Current(16))?;  // Skip root entry

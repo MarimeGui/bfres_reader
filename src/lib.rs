@@ -2,6 +2,7 @@ extern crate ez_io;
 
 mod error;
 pub mod fres;
+pub mod ftex;
 
 /* General Ideas:
 File Type: BFRES

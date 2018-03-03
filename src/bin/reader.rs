@@ -2,12 +2,10 @@ extern crate bfres;
 extern crate yaz0lib_rust;
 
 use bfres::fres::FRESFile;
-use bfres::fres::get_sub_file_info;
 use std::env;
 use std::io::BufReader;
 use std::io::Cursor;
 use std::fs::File;
-use bfres::fres::SubFileIndexGroup;
 use std::path::Path;
 
 fn main() {
@@ -23,7 +21,7 @@ fn main() {
         let mut input_file_buf_reader = BufReader::new(input_file_reader);
         let output = yaz0lib_rust::decompress(&mut input_file_buf_reader);
         let mut bfres_cursor: Cursor<Vec<u8>> = Cursor::new(output);
-        FRESFile::read(&mut bfres_cursor);
+        FRESFile::read(&mut bfres_cursor).unwrap();
         println!("Read File successfully !")
     }
 }

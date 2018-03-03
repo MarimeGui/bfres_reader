@@ -2,6 +2,7 @@ extern crate bfres;
 extern crate yaz0lib_rust;
 
 use bfres::fres::FRESFile;
+use bfres::fres::SubFileType;
 use std::env;
 use std::io::BufReader;
 use std::io::Cursor;
@@ -21,7 +22,17 @@ fn main() {
         let mut input_file_buf_reader = BufReader::new(input_file_reader);
         let output = yaz0lib_rust::decompress(&mut input_file_buf_reader);
         let mut bfres_cursor: Cursor<Vec<u8>> = Cursor::new(output);
-        FRESFile::read(&mut bfres_cursor).unwrap();
-        println!("Read File successfully !")
+        let bfres_file = FRESFile::read(&mut bfres_cursor).unwrap();
+        println!("Read File successfully !");
+        let info = bfres_file.get_sub_file_info().unwrap();
+        for sub_file_info in info {
+            println!("--- {}", sub_file_info.name);
+            match sub_file_info.file_type {
+                SubFileType::ModelData => println!("    Model data"),
+                SubFileType::TextureData => println!("    Texture data"),
+                _ => println!("    Other")
+            }
+            println!("    Position: {}", sub_file_info.position);
+        }
     }
 }

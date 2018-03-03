@@ -12,9 +12,9 @@ fn main() {
     let args: Vec<_> = env::args().collect();
     if args.len() < 2 {
         let exec_name = args[0].to_string();
-        println!("Usage: ./{} input_file [output_file]", Path::new(&exec_name).file_name().unwrap().to_str().unwrap());
-    } else if args.len() > 3 {
-        println!("Please only give one or two arguments");
+        println!("Usage: ./{} input_file", Path::new(&exec_name).file_name().unwrap().to_str().unwrap());
+    } else if args.len() > 2 {
+        println!("Please only give one argument");
     } else {
         let input_file = args[1].to_string();
         let input_file_reader = File::open(&input_file).expect("Failed to open file for reading");

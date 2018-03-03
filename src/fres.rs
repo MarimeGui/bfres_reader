@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use error::WrongMagicNumber;
 use error::NoEntryForKey;
 use util::RelativePointer;
+use util::align_on_4_bytes;
 
 pub struct FRESFile {
     pub header: FRESHeader,
@@ -116,6 +117,7 @@ impl FRESHeader {
         // Header Length
         let header_length = reader.read_be_to_u16()?;
         if header_length != 0x0010 {
+            // Again, not supposed to be bigger than 16 bytes
             return Err(Box::new(WrongMagicNumber{}))
         }
         // File Length
@@ -177,7 +179,7 @@ fn read_string_map<R: Read + Seek>(header: &FRESHeader, reader: &mut R) -> Resul
         let length = reader.read_be_to_u32()?;
         let abs_text_pos = reader.seek(SeekFrom::Current(0))?;
         if length == 0 {
-            break
+            continue
         }
         let text = reader.read_to_string_n(length)?;
         string_table.insert(abs_text_pos, text);
@@ -224,14 +226,6 @@ impl SubFileIndexGroupEntry {
             data_pointer
         })
     }
-}
-
-fn align_on_4_bytes<R: Read + Seek>(reader: &mut R) -> Result<(), Box<Error>> {
-    let pos = reader.seek(SeekFrom::Current(0))?;
-    if pos % 4 != 0 {
-        reader.seek(SeekFrom::Current((4 - (pos % 4)) as i64))?;
-    }
-    Ok(())
 }
 
 fn read_sub_file_index_groups<R: Read + Seek>(header: &FRESHeader, reader: &mut R) -> Result<Vec<SubFileIndexGroup>, Box<Error>> {

@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io::{Read, Seek, SeekFrom};
 use error::RelativePointerDataInvalid;
 
 #[derive(Clone, Copy)]
@@ -15,4 +16,12 @@ impl RelativePointer {
         };
         Ok(temp as u64)
     }
+}
+
+pub fn align_on_4_bytes<R: Read + Seek>(reader: &mut R) -> Result<(), Box<Error>> {
+    let pos = reader.seek(SeekFrom::Current(0))?;
+    if pos % 4 != 0 {
+        reader.seek(SeekFrom::Current((4 - (pos % 4)) as i64))?;
+    }
+    Ok(())
 }

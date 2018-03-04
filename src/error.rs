@@ -19,21 +19,6 @@ impl Display for WrongMagicNumber {
 }
 
 #[derive(Debug)]
-pub struct NoEntryForKey;
-
-impl Error for NoEntryForKey {
-    fn description(&self) -> &str {
-        "Self Explanatory"
-    }
-}
-
-impl Display for NoEntryForKey {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "Yea error lol")
-    }
-}
-
-#[derive(Debug)]
 pub struct RelativePointerDataInvalid;
 
 impl Error for RelativePointerDataInvalid {

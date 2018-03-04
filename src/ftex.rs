@@ -1,9 +1,14 @@
 use ez_io::ReadE;
 use std::error::Error;
 use std::io::Read;
-use super::error::WrongMagicNumber;
+use Importable;
+use error::WrongMagicNumber;
 
-pub struct FTEXSubFile {
+pub struct FTEX {
+    pub header: FTEXHeader
+}
+
+pub struct FTEXHeader {
     pub magic_number: [u8; 4],
     pub dimension: u32,
     pub texture_width: u32,
@@ -37,8 +42,8 @@ pub struct FTEXSubFile {
     pub user_data_entry_count: u16
 }
 
-impl FTEXSubFile {
-    pub fn read<R: Read>(reader: &mut R) -> Result<FTEXSubFile, Box<Error>> {
+impl Importable for FTEXHeader {
+    fn import<R: Read>(reader: &mut R) -> Result<FTEXHeader, Box<Error>> {
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
         if magic_number != [b'F', b'T', b'E', b'X'] {
@@ -81,7 +86,7 @@ impl FTEXSubFile {
         let mipmap_offset = reader.read_be_to_i32()?;
         let user_data_index_group_offset = reader.read_be_to_i32()?;
         let user_data_entry_count = reader.read_be_to_u16()?;
-        Ok(FTEXSubFile {
+        Ok(FTEXHeader {
             magic_number,
             dimension,
             texture_width,

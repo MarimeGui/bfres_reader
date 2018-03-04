@@ -3,6 +3,7 @@ extern crate ez_io;
 mod error;
 mod util;
 pub mod fres;
+pub mod fmdl;
 pub mod ftex;
 
 use ez_io::ReadE;
@@ -10,6 +11,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::error::Error;
 use std::marker::Sized;
 use util::Pointer;
+use util::read_text_entry;
 
 pub trait Importable where Self: Sized {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<Self, Box<Error>>;
@@ -59,6 +61,13 @@ impl Importable for IndexGroupEntry {
             name_pointer,
             data_pointer
         })
+    }
+}
+
+impl IndexGroupEntry {
+    pub fn get_name<R: Read + Seek>(&self, reader: &mut R) -> Result<String, Box<Error>> {
+        self.name_pointer.seek_abs_pos(reader)?;
+        Ok(read_text_entry(reader)?)
     }
 }
 

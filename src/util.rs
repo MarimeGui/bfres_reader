@@ -51,3 +51,17 @@ pub fn align_on_4_bytes<R: Read + Seek>(reader: &mut R) -> Result<(), Box<Error>
     }
     Ok(())
 }
+
+pub fn read_text_entry<R: Read + Seek>(reader: &mut R) -> Result<String, Box<Error>> {
+    let mut bytes: Vec<u8> = Vec::new();
+    let mut current_byte: [u8; 1] = [0u8; 1];
+    loop {
+        reader.read_exact(&mut current_byte)?;
+        if current_byte[0] == 0u8 {
+            break
+        } else {
+            bytes.push(current_byte[0]);
+        }
+    }
+    Ok(String::from_utf8(bytes)?)
+}

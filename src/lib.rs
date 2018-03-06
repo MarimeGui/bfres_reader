@@ -37,6 +37,15 @@ pub struct IndexGroupEntry<I: Importable> {
     data_type: PhantomData<I>
 }
 
+pub struct DataArray<I: Importable> {
+    pub entries: Vec<DataArrayEntry<I>>
+}
+
+pub struct DataArrayEntry<I: Importable> {
+    pub data_pointer: Pointer,
+    data_type: PhantomData<I>
+}
+
 impl <I: Importable> Importable for IndexGroup<I> {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<IndexGroup<I>, Box<Error>> {
         let end_of_group_absolute_pos = u64::from(reader.read_be_to_u32()?) + reader.seek(SeekFrom::Current(0))?;
@@ -78,6 +87,34 @@ impl <I: Importable> IndexGroupEntry<I> {
     pub fn get_name<R: Read + Seek>(&self, reader: &mut R) -> Result<String, Box<Error>> {
         self.name_pointer.seek_abs_pos(reader)?;
         Ok(read_text_entry(reader)?)
+    }
+    pub fn get_data<R: Read + Seek>(&self, reader: &mut R) -> Result<I, Box<Error>> {
+        self.data_pointer.seek_abs_pos(reader)?;
+        Ok(I::import(reader)?)
+    }
+}
+
+impl <I: Importable> DataArray<I> {
+    pub fn new<S: Seek>(seeker: &mut S, every: u32, amount: u32) -> Result<DataArray<I>, Box<Error>> {
+        let mut entries: Vec<DataArrayEntry<I>> = Vec::with_capacity(amount as usize);
+        for _ in 0..amount {
+            entries.push(DataArrayEntry::new(seeker)?);
+            seeker.seek(SeekFrom::Current(every as i64))?;
+        }
+        Ok(DataArray {
+            entries
+        })
+    }
+}
+
+impl <I: Importable> DataArrayEntry<I> {
+    pub fn new<S: Seek>(seeker: &mut S) -> Result<DataArrayEntry<I>, Box<Error>> {
+        let ptr = Pointer::new_abs(seeker.seek(SeekFrom::Current(0))? as i32);
+        let data_type: PhantomData<I> = PhantomData {};
+        Ok(DataArrayEntry {
+            data_pointer: ptr,
+            data_type
+        })
     }
     pub fn get_data<R: Read + Seek>(&self, reader: &mut R) -> Result<I, Box<Error>> {
         self.data_pointer.seek_abs_pos(reader)?;

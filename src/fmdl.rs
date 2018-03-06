@@ -1,5 +1,6 @@
 use ez_io::ReadE;
 use IndexGroup;
+use DataArray;
 use Importable;
 use util::Pointer;
 use std::io::{Read, Seek, SeekFrom};
@@ -7,7 +8,7 @@ use std::error::Error;
 
 pub struct FMDL {
     pub header: FMDLHeader,
-    pub fvtx_array: Vec<FVTX>,
+    pub fvtx_array: DataArray<FVTX>,
     pub fmat_index_group: IndexGroup<FMAT>,
     pub fskl: FSKL,
     pub fshp_index_group: IndexGroup<FSHP>
@@ -32,7 +33,7 @@ pub struct FMDLHeader {
 pub struct FVTX {
     pub header: FVTXHeader,
     pub attributes: IndexGroup<FVTXAttributes>,
-    pub buffers: Vec<FVTXBuffer>
+    pub buffers: DataArray<FVTXBuffer>
 }
 
 pub struct FVTXHeader {
@@ -181,12 +182,7 @@ impl Importable for FMDL {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FMDL, Box<Error>> {
         let header = FMDLHeader::import(reader)?;
         header.fvtx_array_offset.seek_abs_pos(reader)?;
-        let mut fvtx_array: Vec<FVTX> = Vec::with_capacity(header.fvtx_count as usize);
-        for _ in 0..header.fvtx_count {
-            let begin_pos = reader.seek(SeekFrom::Current(0))?;  // Only the Header is contiguous in the array
-            fvtx_array.push(FVTX::import(reader)?);
-            reader.seek(SeekFrom::Start(begin_pos + 0x20))?;  // That is why we need to get back to where we where after reading the FVTX
-        }
+        let fvtx_array = DataArray::new(reader, 0x20, u32::from(header.fvtx_count))?;
         header.fmat_index_group_offset.seek_abs_pos(reader)?;
         let fmat_index_group = IndexGroup::import(reader)?;
         header.fskl_offset.seek_abs_pos(reader)?;
@@ -260,10 +256,7 @@ impl Importable for FVTX {
         header.attribute_index_group_offset.seek_abs_pos(reader)?;
         let attributes = IndexGroup::import(reader)?;
         header.buffer_array_offset.seek_abs_pos(reader)?;
-        let mut buffers: Vec<FVTXBuffer> = Vec::with_capacity(header.buffer_count as usize);
-        for _ in 0..header.buffer_count {
-            buffers.push(FVTXBuffer::import(reader)?);
-        }
+        let buffers: DataArray<FVTXBuffer> = DataArray::new(reader, 0x18, u32::from(header.buffer_count))?;
         Ok(FVTX {
             header,
             attributes,

@@ -26,13 +26,24 @@ fn main() {
         let bfres_file = FRES::import(&mut bfres_cursor).unwrap();
         println!("Read File successfully !");
         println!("{} sub-files", bfres_file.header.get_total_sub_file_count());
+        // FMDL
         match bfres_file.sub_file_index_groups.model_data {
             Some(a) => {
-                println!("{} Model data sub-files", a.entries.len());
+                println!("{} FMDL sub-files", a.entries.len());
                 for (count, fmdl_entry) in a.entries.iter().enumerate() {
                     println!("--- {} @ 0x{:x}", fmdl_entry.get_name(&mut bfres_cursor).unwrap(), fmdl_entry.data_pointer.get_abs_pos().unwrap());
                     let fmdl = fmdl_entry.get_data(&mut bfres_cursor).unwrap();
                     println!("    Total number of vertices: {}", fmdl.header.total_nb_vertices);
+                    // FVTX
+                    if fmdl.fvtx_array.entries.len() > 0 {
+                        println!("    {} FVTX:", fmdl.fvtx_array.entries.len());
+                        for fvtx_entry in fmdl.fvtx_array.entries {
+                            println!("    --- @ 0x{:x}", fvtx_entry.data_pointer.get_abs_pos().unwrap());
+                            let fvtx = fvtx_entry.get_data(&mut bfres_cursor).unwrap();
+                            println!("         {} vertices", fvtx.header.nb_vertices);
+                        }
+                    }
+                    // FMAT
                     if fmdl.fmat_index_group.entries.len() > 0 {
                         println!("    {} FMAT:", fmdl.fmat_index_group.entries.len());
                         for fmat_entry in fmdl.fmat_index_group.entries {
@@ -41,6 +52,7 @@ fn main() {
                             println!("        {} texture references", fmat.header.texture_reference_count);
                         }
                     }
+                    // FSHP
                     if fmdl.fshp_index_group.entries.len() > 0 {
                         println!("    {} FSHP:", fmdl.fshp_index_group.entries.len());
                         for fshp_entry in fmdl.fshp_index_group.entries {
@@ -58,7 +70,7 @@ fn main() {
         }
         match bfres_file.sub_file_index_groups.texture_data {
             Some(a) => {
-                println!("{} Texture data sub-files", a.entries.len());
+                println!("{} FTEX sub-files", a.entries.len());
                 for (count, ftex_entry) in a.entries.iter().enumerate() {
                     println!("--- {} @ 0x{:x}", ftex_entry.get_name(&mut bfres_cursor).unwrap(), ftex_entry.data_pointer.get_abs_pos().unwrap());
                     let ftex = ftex_entry.get_data(&mut bfres_cursor).unwrap();

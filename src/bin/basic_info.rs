@@ -80,5 +80,17 @@ fn main() {
                 }
             }
         }
+        if let Some(a) = bfres_file.sub_file_index_groups.embedded_file {
+            println!("{} Embedded sub-files", a.entries.len());
+            for (count, embedded_entry) in a.entries.iter().enumerate() {
+                println!("--- {} @ 0x{:x}", embedded_entry.get_name(&mut bfres_cursor).unwrap(), embedded_entry.data_pointer.get_abs_pos().unwrap());
+                let embedded = embedded_entry.get_data(&mut bfres_cursor).unwrap();
+                println!("    File @ 0x{:x}", embedded.offset.get_abs_pos().unwrap());
+                println!("    {} byte{} long", embedded.length, if embedded.length == 1 {""} else {"s"});
+                if count > 9 {
+                    break
+                }
+            }
+        }
     }
 }

@@ -1,6 +1,6 @@
 use ez_io::ReadE;
 use std::error::Error;
-use std::io::Read;
+use std::io::{Read, Seek};
 use Importable;
 use error::WrongMagicNumber;
 
@@ -40,6 +40,15 @@ pub struct FTEXHeader {
     pub mipmap_offset: i32,
     pub user_data_index_group_offset: i32,
     pub user_data_entry_count: u16
+}
+
+impl Importable for FTEX {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FTEX, Box<Error>> {
+        let header = FTEXHeader::import(reader)?;
+        Ok(FTEX {
+            header
+        })
+    }
 }
 
 impl Importable for FTEXHeader {

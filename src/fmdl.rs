@@ -9,9 +9,9 @@ use std::error::Error;
 pub struct FMDL {
     pub header: FMDLHeader,
     pub fvtx_array: Vec<FVTX>,
-    pub fmat_index_group: IndexGroup,
+    pub fmat_index_group: IndexGroup<FMAT>,
     pub fskl: FSKL,
-    pub fshp_index_group: IndexGroup
+    pub fshp_index_group: IndexGroup<FSHP>
 }
 
 pub struct FMDLHeader {
@@ -31,9 +31,9 @@ pub struct FMDLHeader {
 }
 
 pub struct FVTX {
-    pub header: FVTXHeader,
-    pub attributes: Vec<FVTXAttributes>,
-    pub buffers: Vec<FVTXBuffers>
+    pub header: FVTXHeader
+    // pub attributes: Vec<FVTXAttributes>, I will do that later
+    // pub buffers: Vec<FVTXBuffers>
 }
 
 pub struct FVTXHeader {
@@ -144,8 +144,11 @@ impl Importable for FMDL {
         for _ in 0..header.fvtx_count {
             fvtx_array.push(FVTX::import(reader)?);
         }
+        header.fmat_index_group_offset.seek_abs_pos(reader)?;
         let fmat_index_group = IndexGroup::import(reader)?;
+        header.fskl_offset.seek_abs_pos(reader)?;
         let fskl = FSKL::import(reader)?;
+        header.fshp_index_group_offset.seek_abs_pos(reader)?;
         let fshp_index_group = IndexGroup::import(reader)?;
         Ok(FMDL {
             header,
@@ -210,8 +213,11 @@ impl Importable for FMDLHeader {
 }
 
 impl Importable for FVTX {
-    fn import<R: Read + Seek>(_reader: &mut R) -> Result<FVTX, Box<Error>> {
-        unimplemented!();
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTX, Box<Error>> {
+        let header = FVTXHeader::import(reader)?;
+        Ok(FVTX {
+            header
+        })
     }
 }
 
@@ -240,8 +246,20 @@ impl Importable for FVTXHeader {
     }
 }
 
+impl Importable for FMAT {
+    fn import<R: Read + Seek>(_reader: &mut R) -> Result<FMAT, Box<Error>> {
+        Ok(FMAT {})
+    }
+}
+
 impl Importable for FSKL {
     fn import<R: Read + Seek>(_reader: &mut R) -> Result<FSKL, Box<Error>> {
-        unimplemented!();
+        Ok(FSKL {})
+    }
+}
+
+impl Importable for FSHP {
+    fn import<R: Read + Seek>(_reader: &mut R) -> Result<FSHP, Box<Error>> {
+        Ok(FSHP {})
     }
 }

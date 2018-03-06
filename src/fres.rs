@@ -6,11 +6,20 @@ use std::io::SeekFrom;
 use std::collections::HashMap;
 use IndexGroup;
 use Importable;
+use fmdl::FMDL;
+use ftex::FTEX;
+use fska::FSKA;
+use fshu::FSHU;
+use ftxp::FTXP;
+use fvis::FVIS;
+use fsha::FSHA;
+use fscn::FSCN;
+use embedded::Embedded;
 use error::WrongMagicNumber;
 use util::Pointer;
 use util::align_on_4_bytes;
 
-pub struct FRESFile {
+pub struct FRES {
     pub header: FRESHeader,
     pub string_table: StringTable,
     pub sub_file_index_groups: SubFileIndexGroups
@@ -25,7 +34,7 @@ pub struct FRESHeader {
     pub file_name_offset: Pointer,
     pub string_table_length: i32,
     pub string_table_offset: Pointer,
-    pub sub_file_index_groups_offsets: [Pointer; 12],
+    pub sub_file_index_groups_offsets: [Option<Pointer>; 12],
     pub sub_file_index_groups_entry_counts: [u16; 12],
     pub user_pointer: u32
 }
@@ -35,36 +44,26 @@ pub struct StringTable {
 }
 
 pub struct SubFileIndexGroups {
-    pub groups: Vec<SubFileIndexGroup>
+    pub model_data: Option<IndexGroup<FMDL>>,
+    pub texture_data: Option<IndexGroup<FTEX>>,
+    pub skeleton_animation: Option<IndexGroup<FSKA>>,
+    pub shader_parameters: Option<IndexGroup<FSHU>>,
+    pub color_animation: Option<IndexGroup<FSHU>>,
+    pub texture_srt_animation: Option<IndexGroup<FSHU>>,
+    pub texture_pattern_animation: Option<IndexGroup<FTXP>>,
+    pub bone_visibility_animation: Option<IndexGroup<FVIS>>,
+    pub material_visibility_animation: Option<IndexGroup<FVIS>>,
+    pub shape_animation: Option<IndexGroup<FSHA>>,
+    pub scene_animation: Option<IndexGroup<FSCN>>,
+    pub embedded_file: Option<IndexGroup<Embedded>>
 }
 
-pub struct SubFileIndexGroup {
-    pub file_type: SubFileType,
-    pub group: IndexGroup
-}
-
-#[derive(Clone)]
-pub enum SubFileType {
-    ModelData,
-    TextureData,
-    SkeletonAnimation,
-    ShaderParameters,
-    ColorAnimation,
-    TextureSRTAnimation,
-    TexturePatternAnimation,
-    BoneVisibilityAnimation,
-    MaterialVisibilityAnimation,
-    ShapeAnimation,
-    SceneAnimation,
-    Embedded
-}
-
-impl Importable for FRESFile {
-    fn import<R: Read + Seek>(reader: &mut R) -> Result<FRESFile, Box<Error>> {
+impl Importable for FRES {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FRES, Box<Error>> {
         let header = FRESHeader::import(reader)?;
         let string_map = StringTable::import(&header, reader)?;
         let sub_file_index_groups = SubFileIndexGroups::import(&header, reader)?;
-        Ok(FRESFile {
+        Ok(FRES {
             header,
             string_table: string_map,
             sub_file_index_groups
@@ -105,12 +104,12 @@ impl Importable for FRESHeader {
         // String Table Offset
         let string_table_offset = Pointer::read_new_rel_i32_be(reader)?;
         // File Offsets
-        let mut file_offsets: [Pointer; 12] = [ Pointer {
-            location: None,
-            points_to: 0
-        }; 12];
+        let mut file_offsets: [Option<Pointer>; 12] = [ None; 12];
         for ptr in &mut file_offsets {
-            *ptr = Pointer::read_new_rel_i32_be(reader)?;
+            let temp = Pointer::read_new_rel_i32_be(reader)?;
+            if temp.points_to != 0 {
+                *ptr = Some(temp);
+            };
         }
         // File Counts
         let mut file_counts = [0u16; 12];
@@ -132,6 +131,16 @@ impl Importable for FRESHeader {
             sub_file_index_groups_entry_counts: file_counts,
             user_pointer
         })
+    }
+}
+
+impl FRESHeader {
+    pub fn get_total_sub_file_count(&self) -> u16 {
+        let mut grand_total = 0u16;
+        for count in &self.sub_file_index_groups_entry_counts {
+            grand_total += count;
+        }
+        grand_total
     }
 }
 
@@ -159,34 +168,40 @@ impl StringTable {
 
 impl SubFileIndexGroups {
     fn import<R: Read + Seek>(header: &FRESHeader, reader: &mut R) -> Result<SubFileIndexGroups, Box<Error>> {
-        let mut groups: Vec<SubFileIndexGroup> = Vec::with_capacity(12);
-        for id in 0..12 {
-            if header.sub_file_index_groups_offsets[id].points_to != 0 {
-                header.sub_file_index_groups_offsets[id].seek_abs_pos(reader)?;
-                groups.push(
-                    SubFileIndexGroup {
-                        file_type: match id {
-                            0 => SubFileType::ModelData,
-                            1 => SubFileType::TextureData,
-                            2 => SubFileType::SkeletonAnimation,
-                            3 => SubFileType::ShaderParameters,
-                            4 => SubFileType::ColorAnimation,
-                            5 => SubFileType::TextureSRTAnimation,
-                            6 => SubFileType::TexturePatternAnimation,
-                            7 => SubFileType::BoneVisibilityAnimation,
-                            8 => SubFileType::MaterialVisibilityAnimation,
-                            9 => SubFileType::ShapeAnimation,
-                            10 => SubFileType::SceneAnimation,
-                            11 => SubFileType::Embedded,
-                            _ => panic!()
-                        },
-                        group: IndexGroup::import(reader)?
-                    }
-                );
-            }
+        fn process_group<R: Read + Seek, I: Importable>(index_group_pointer: &Option<Pointer>, reader: &mut R) -> Result<Option<IndexGroup<I>>, Box<Error>> {
+            Ok(match *index_group_pointer {
+                Some(a) => {
+                    a.seek_abs_pos(reader)?;
+                    Some(IndexGroup::import(reader)?)
+                },
+                None => None
+            })
         }
+        let model_data: Option<IndexGroup<FMDL>> = process_group(&header.sub_file_index_groups_offsets[0], reader)?;
+        let texture_data: Option<IndexGroup<FTEX>> = process_group(&header.sub_file_index_groups_offsets[1], reader)?;
+        let skeleton_animation: Option<IndexGroup<FSKA>> = process_group(&header.sub_file_index_groups_offsets[2], reader)?;
+        let shader_parameters: Option<IndexGroup<FSHU>> = process_group(&header.sub_file_index_groups_offsets[3], reader)?;
+        let color_animation: Option<IndexGroup<FSHU>> = process_group(&header.sub_file_index_groups_offsets[4], reader)?;
+        let texture_srt_animation: Option<IndexGroup<FSHU>> = process_group(&header.sub_file_index_groups_offsets[5], reader)?;
+        let texture_pattern_animation: Option<IndexGroup<FTXP>> = process_group(&header.sub_file_index_groups_offsets[6], reader)?;
+        let bone_visibility_animation: Option<IndexGroup<FVIS>> = process_group(&header.sub_file_index_groups_offsets[7], reader)?;
+        let material_visibility_animation: Option<IndexGroup<FVIS>> = process_group(&header.sub_file_index_groups_offsets[8], reader)?;
+        let shape_animation: Option<IndexGroup<FSHA>> = process_group(&header.sub_file_index_groups_offsets[9], reader)?;
+        let scene_animation: Option<IndexGroup<FSCN>> = process_group(&header.sub_file_index_groups_offsets[10], reader)?;
+        let embedded_file: Option<IndexGroup<Embedded>> = process_group(&header.sub_file_index_groups_offsets[11], reader)?;
         Ok(SubFileIndexGroups {
-            groups
+            model_data,
+            texture_data,
+            skeleton_animation,
+            shader_parameters,
+            color_animation,
+            texture_srt_animation,
+            texture_pattern_animation,
+            bone_visibility_animation,
+            material_visibility_animation,
+            shape_animation,
+            scene_animation,
+            embedded_file
         })
     }
 }

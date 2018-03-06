@@ -5,11 +5,18 @@ mod util;
 pub mod fres;
 pub mod fmdl;
 pub mod ftex;
+pub mod fska;
+pub mod fshu;
+pub mod ftxp;
+pub mod fvis;
+pub mod fsha;
+pub mod fscn;
+pub mod embedded;
 
 use ez_io::ReadE;
 use std::io::{Read, Seek, SeekFrom};
 use std::error::Error;
-use std::marker::Sized;
+use std::marker::{Sized, PhantomData};
 use util::Pointer;
 use util::read_text_entry;
 
@@ -17,23 +24,24 @@ pub trait Importable where Self: Sized {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<Self, Box<Error>>;
 }
 
-pub struct IndexGroup {
-    pub entries: Vec<IndexGroupEntry>
+pub struct IndexGroup<I: Importable> {
+    pub entries: Vec<IndexGroupEntry<I>>
 }
 
-pub struct IndexGroupEntry {
+pub struct IndexGroupEntry<I: Importable> {
     pub search_value: u32,
     pub left_index: u16,
     pub right_index: u16,
     pub name_pointer: Pointer,
-    pub data_pointer: Pointer
+    pub data_pointer: Pointer,
+    data_type: PhantomData<I>
 }
 
-impl Importable for IndexGroup {
-    fn import<R: Read + Seek>(reader: &mut R) -> Result<IndexGroup, Box<Error>> {
+impl <I: Importable> Importable for IndexGroup<I> {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<IndexGroup<I>, Box<Error>> {
         let end_of_group_absolute_pos = u64::from(reader.read_be_to_u32()?) + reader.seek(SeekFrom::Current(0))?;
         let nb_entries = reader.read_be_to_i32()?;
-        let mut entries: Vec<IndexGroupEntry> = Vec::with_capacity(nb_entries as usize);
+        let mut entries: Vec<IndexGroupEntry<I>> = Vec::with_capacity(nb_entries as usize);
         reader.seek(SeekFrom::Current(16))?;  // Skip root entry
         for _ in 0..nb_entries {
             entries.push(IndexGroupEntry::import(reader)?);
@@ -47,27 +55,32 @@ impl Importable for IndexGroup {
     }
 }
 
-impl Importable for IndexGroupEntry {
-    fn import<R: Read + Seek>(reader: &mut R) -> Result<IndexGroupEntry, Box<Error>> {
+impl <I: Importable> Importable for IndexGroupEntry<I> {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<IndexGroupEntry<I>, Box<Error>> {
         let search_value = reader.read_be_to_u32()?;
         let left_index = reader.read_be_to_u16()?;
         let right_index = reader.read_be_to_u16()?;
         let name_pointer = Pointer::read_new_rel_i32_be(reader)?;
         let data_pointer = Pointer::read_new_rel_i32_be(reader)?;
+        let data_type: PhantomData<I> = PhantomData {};
         Ok(IndexGroupEntry {
             search_value,
             left_index,
             right_index,
             name_pointer,
-            data_pointer
+            data_pointer,
+            data_type
         })
     }
 }
 
-impl IndexGroupEntry {
+impl <I: Importable> IndexGroupEntry<I> {
     pub fn get_name<R: Read + Seek>(&self, reader: &mut R) -> Result<String, Box<Error>> {
         self.name_pointer.seek_abs_pos(reader)?;
         Ok(read_text_entry(reader)?)
+    }
+    pub fn get_data<R: Read + Seek>(&self, reader: &mut R) -> Result<I, Box<Error>> {
+        Ok(I::import(reader)?)
     }
 }
 

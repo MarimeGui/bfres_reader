@@ -31,9 +31,9 @@ pub struct FMDLHeader {
 }
 
 pub struct FVTX {
-    pub header: FVTXHeader
-    // pub attributes: Vec<FVTXAttributes>, I will do that later
-    // pub buffers: Vec<FVTXBuffers>
+    pub header: FVTXHeader,
+    pub attributes: IndexGroup<FVTXAttributes>,
+    pub buffers: Vec<FVTXBuffer>
 }
 
 pub struct FVTXHeader {
@@ -55,7 +55,7 @@ pub struct FVTXAttributes {
     pub format: u32
 }
 
-pub struct FVTXBuffers {
+pub struct FVTXBuffer {
     pub data_pointer: u32,
     pub size: u32,
     pub handle: u32,
@@ -143,7 +143,9 @@ impl Importable for FMDL {
         header.fvtx_array_offset.seek_abs_pos(reader)?;
         let mut fvtx_array: Vec<FVTX> = Vec::with_capacity(header.fvtx_count as usize);
         for _ in 0..header.fvtx_count {
+            let begin_pos = reader.seek(SeekFrom::Current(0))?;  // Only the Header is contiguous in the array
             fvtx_array.push(FVTX::import(reader)?);
+            reader.seek(SeekFrom::Start(begin_pos + 0x20))?;  // That is why we need to get back to where we where after reading the FVTX
         }
         header.fmat_index_group_offset.seek_abs_pos(reader)?;
         let fmat_index_group = IndexGroup::import(reader)?;
@@ -216,8 +218,17 @@ impl Importable for FMDLHeader {
 impl Importable for FVTX {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTX, Box<Error>> {
         let header = FVTXHeader::import(reader)?;
+        header.attribute_index_group_offset.seek_abs_pos(reader)?;
+        let attributes = IndexGroup::import(reader)?;
+        header.buffer_array_offset.seek_abs_pos(reader)?;
+        let mut buffers: Vec<FVTXBuffer> = Vec::with_capacity(header.buffer_count as usize);
+        for _ in 0..header.buffer_count {
+            buffers.push(FVTXBuffer::import(reader)?);
+        }
         Ok(FVTX {
-            header
+            header,
+            attributes,
+            buffers
         })
     }
 }
@@ -249,6 +260,43 @@ impl Importable for FVTXHeader {
             attribute_index_group_offset,
             buffer_array_offset,
             user_pointer
+        })
+    }
+}
+
+impl Importable for FVTXAttributes {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTXAttributes, Box<Error>> {
+        let attribute_name_offset = Pointer::read_new_rel_i32_be(reader)?;
+        let buffer_index = reader.read_to_u8()?;
+        reader.seek(SeekFrom::Current(1))?;
+        let buffer_offset = reader.read_be_to_u16()?;
+        let format = reader.read_be_to_u32()?;
+        Ok(FVTXAttributes {
+            attribute_name_offset,
+            buffer_index,
+            buffer_offset,
+            format
+        })
+    }
+}
+
+impl Importable for FVTXBuffer {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTXBuffer, Box<Error>> {
+        let data_pointer = reader.read_be_to_u32()?;
+        let size = reader.read_be_to_u32()?;
+        let handle = reader.read_be_to_u32()?;
+        let stride = reader.read_be_to_u16()?;
+        let buffering_count = reader.read_be_to_u16()?;
+        let context_pointer = reader.read_be_to_u32()?;
+        let data_offset = Pointer::read_new_rel_i32_be(reader)?;
+        Ok(FVTXBuffer {
+            data_pointer,
+            size,
+            handle,
+            stride,
+            buffering_count,
+            context_pointer,
+            data_offset
         })
     }
 }

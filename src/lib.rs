@@ -80,6 +80,7 @@ impl <I: Importable> IndexGroupEntry<I> {
         Ok(read_text_entry(reader)?)
     }
     pub fn get_data<R: Read + Seek>(&self, reader: &mut R) -> Result<I, Box<Error>> {
+        self.data_pointer.seek_abs_pos(reader)?;
         Ok(I::import(reader)?)
     }
 }

@@ -33,6 +33,22 @@ fn main() {
                     println!("--- {} @ 0x{:x}", fmdl_entry.get_name(&mut bfres_cursor).unwrap(), fmdl_entry.data_pointer.get_abs_pos().unwrap());
                     let fmdl = fmdl_entry.get_data(&mut bfres_cursor).unwrap();
                     println!("    Total number of vertices: {}", fmdl.header.total_nb_vertices);
+                    if fmdl.fmat_index_group.entries.len() > 0 {
+                        println!("    {} FMAT:", fmdl.fmat_index_group.entries.len());
+                        for fmat_entry in fmdl.fmat_index_group.entries {
+                            println!("    --- {} @ 0x{:x}", fmat_entry.get_name(&mut bfres_cursor).unwrap(), fmat_entry.data_pointer.get_abs_pos().unwrap());
+                            let fmat = fmat_entry.get_data(&mut bfres_cursor).unwrap();
+                            println!("        {} texture references", fmat.header.texture_reference_count);
+                        }
+                    }
+                    if fmdl.fshp_index_group.entries.len() > 0 {
+                        println!("    {} FSHP:", fmdl.fshp_index_group.entries.len());
+                        for fshp_entry in fmdl.fshp_index_group.entries {
+                            println!("    --- {} @ 0x{:x}", fshp_entry.get_name(&mut bfres_cursor).unwrap(), fshp_entry.data_pointer.get_abs_pos().unwrap());
+                            let fshp = fshp_entry.get_data(&mut bfres_cursor).unwrap();
+                            println!("        Vertex skin count: {}", fshp.header.vertex_skin_count);
+                        }
+                    }
                     if count > 9 {
                         break
                     }

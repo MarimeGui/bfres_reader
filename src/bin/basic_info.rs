@@ -27,64 +27,58 @@ fn main() {
         println!("Read File successfully !");
         println!("{} sub-files", bfres_file.header.get_total_sub_file_count());
         // FMDL
-        match bfres_file.sub_file_index_groups.model_data {
-            Some(a) => {
-                println!("{} FMDL sub-files", a.entries.len());
-                for (count, fmdl_entry) in a.entries.iter().enumerate() {
-                    println!("--- {} @ 0x{:x}", fmdl_entry.get_name(&mut bfres_cursor).unwrap(), fmdl_entry.data_pointer.get_abs_pos().unwrap());
-                    let fmdl = fmdl_entry.get_data(&mut bfres_cursor).unwrap();
-                    println!("    Total number of vertices: {}", fmdl.header.total_nb_vertices);
-                    // FVTX
-                    if fmdl.fvtx_array.entries.len() > 0 {
-                        println!("    {} FVTX:", fmdl.fvtx_array.entries.len());
-                        for fvtx_entry in fmdl.fvtx_array.entries {
-                            println!("    --- @ 0x{:x}", fvtx_entry.data_pointer.get_abs_pos().unwrap());
-                            let fvtx = fvtx_entry.get_data(&mut bfres_cursor).unwrap();
-                            println!("         {} vertices", fvtx.header.nb_vertices);
-                        }
-                    }
-                    // FMAT
-                    if fmdl.fmat_index_group.entries.len() > 0 {
-                        println!("    {} FMAT:", fmdl.fmat_index_group.entries.len());
-                        for fmat_entry in fmdl.fmat_index_group.entries {
-                            println!("    --- {} @ 0x{:x}", fmat_entry.get_name(&mut bfres_cursor).unwrap(), fmat_entry.data_pointer.get_abs_pos().unwrap());
-                            let fmat = fmat_entry.get_data(&mut bfres_cursor).unwrap();
-                            println!("        {} texture references", fmat.header.texture_reference_count);
-                        }
-                    }
-                    // FSKL
-                    println!("    1 FSKL:");
-                    println!("    --- @ 0x{:x}", fmdl.header.fskl_offset.get_abs_pos().unwrap());
-                    println!("        {} bones", fmdl.fskl.header.bone_array_count);
-                    // FSHP
-                    if fmdl.fshp_index_group.entries.len() > 0 {
-                        println!("    {} FSHP:", fmdl.fshp_index_group.entries.len());
-                        for fshp_entry in fmdl.fshp_index_group.entries {
-                            println!("    --- {} @ 0x{:x}", fshp_entry.get_name(&mut bfres_cursor).unwrap(), fshp_entry.data_pointer.get_abs_pos().unwrap());
-                            let fshp = fshp_entry.get_data(&mut bfres_cursor).unwrap();
-                            println!("        Vertex skin count: {}", fshp.header.vertex_skin_count);
-                        }
-                    }
-                    if count > 9 {
-                        break
+        if let Some(a) = bfres_file.sub_file_index_groups.model_data {
+            println!("{} FMDL sub-files", a.entries.len());
+            for (count, fmdl_entry) in a.entries.iter().enumerate() {
+                println!("--- {} @ 0x{:x}", fmdl_entry.get_name(&mut bfres_cursor).unwrap(), fmdl_entry.data_pointer.get_abs_pos().unwrap());
+                let fmdl = fmdl_entry.get_data(&mut bfres_cursor).unwrap();
+                println!("    Total number of vertices: {}", fmdl.header.total_nb_vertices);
+                // FVTX
+                if fmdl.fvtx_array.entries.is_empty() {
+                    println!("    {} FVTX:", fmdl.fvtx_array.entries.len());
+                    for fvtx_entry in fmdl.fvtx_array.entries {
+                        println!("    --- @ 0x{:x}", fvtx_entry.data_pointer.get_abs_pos().unwrap());
+                        let fvtx = fvtx_entry.get_data(&mut bfres_cursor).unwrap();
+                        println!("         {} vertices", fvtx.header.nb_vertices);
                     }
                 }
-            },
-            None => {}
+                // FMAT
+                if fmdl.fmat_index_group.entries.is_empty() {
+                    println!("    {} FMAT:", fmdl.fmat_index_group.entries.len());
+                    for fmat_entry in fmdl.fmat_index_group.entries {
+                        println!("    --- {} @ 0x{:x}", fmat_entry.get_name(&mut bfres_cursor).unwrap(), fmat_entry.data_pointer.get_abs_pos().unwrap());
+                        let fmat = fmat_entry.get_data(&mut bfres_cursor).unwrap();
+                        println!("        {} texture references", fmat.header.texture_reference_count);
+                    }
+                }
+                // FSKL
+                println!("    1 FSKL:");
+                println!("    --- @ 0x{:x}", fmdl.header.fskl_offset.get_abs_pos().unwrap());
+                println!("        {} bones", fmdl.fskl.header.bone_array_count);
+                // FSHP
+                if fmdl.fshp_index_group.entries.is_empty() {
+                    println!("    {} FSHP:", fmdl.fshp_index_group.entries.len());
+                    for fshp_entry in fmdl.fshp_index_group.entries {
+                        println!("    --- {} @ 0x{:x}", fshp_entry.get_name(&mut bfres_cursor).unwrap(), fshp_entry.data_pointer.get_abs_pos().unwrap());
+                        let fshp = fshp_entry.get_data(&mut bfres_cursor).unwrap();
+                        println!("        Vertex skin count: {}", fshp.header.vertex_skin_count);
+                    }
+                }
+                if count > 9 {
+                    break
+                }
+            }
         }
-        match bfres_file.sub_file_index_groups.texture_data {
-            Some(a) => {
-                println!("{} FTEX sub-files", a.entries.len());
-                for (count, ftex_entry) in a.entries.iter().enumerate() {
-                    println!("--- {} @ 0x{:x}", ftex_entry.get_name(&mut bfres_cursor).unwrap(), ftex_entry.data_pointer.get_abs_pos().unwrap());
-                    let ftex = ftex_entry.get_data(&mut bfres_cursor).unwrap();
-                    println!("    Resolution: {} x {}", ftex.header.texture_width, ftex.header.texture_height);
-                    if count > 9 {
-                        break
-                    }
+        if let Some(a) = bfres_file.sub_file_index_groups.texture_data {
+            println!("{} FTEX sub-files", a.entries.len());
+            for (count, ftex_entry) in a.entries.iter().enumerate() {
+                println!("--- {} @ 0x{:x}", ftex_entry.get_name(&mut bfres_cursor).unwrap(), ftex_entry.data_pointer.get_abs_pos().unwrap());
+                let ftex = ftex_entry.get_data(&mut bfres_cursor).unwrap();
+                println!("    Resolution: {} x {}", ftex.header.texture_width, ftex.header.texture_height);
+                if count > 9 {
+                    break
                 }
-            },
-            None => {}
+            }
         }
     }
 }

@@ -99,7 +99,7 @@ impl <I: Importable> DataArray<I> {
         let mut entries: Vec<DataArrayEntry<I>> = Vec::with_capacity(amount as usize);
         for _ in 0..amount {
             entries.push(DataArrayEntry::new(seeker)?);
-            seeker.seek(SeekFrom::Current(every as i64))?;
+            seeker.seek(SeekFrom::Current(i64::from(every)))?;
         }
         Ok(DataArray {
             entries

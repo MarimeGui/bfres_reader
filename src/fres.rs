@@ -28,8 +28,6 @@ pub struct FRES {
 
 pub struct FRESHeader {
     pub version: u32,
-    pub bom: u16,
-    pub header_length: u16,
     pub file_length: u32,
     pub file_alignment: u32,
     pub file_name_offset: Pointer,
@@ -37,7 +35,6 @@ pub struct FRESHeader {
     pub string_table_offset: Pointer,
     pub sub_file_index_groups_offsets: [Option<Pointer>; 12],
     pub sub_file_index_groups_entry_counts: [u16; 12],
-    pub user_pointer: u32
 }
 
 pub struct StringTable {
@@ -124,8 +121,6 @@ impl Importable for FRESHeader {
         }
         Ok(FRESHeader {
             version,
-            bom,
-            header_length,
             file_length,
             file_alignment,
             file_name_offset,
@@ -133,7 +128,6 @@ impl Importable for FRESHeader {
             string_table_offset,
             sub_file_index_groups_offsets: file_offsets,
             sub_file_index_groups_entry_counts: file_counts,
-            user_pointer
         })
     }
 }

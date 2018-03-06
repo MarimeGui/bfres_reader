@@ -3,7 +3,7 @@ use IndexGroup;
 use Importable;
 use util::Pointer;
 use error::WrongMagicNumber;
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, SeekFrom};
 use std::error::Error;
 
 pub struct FMDL {
@@ -234,6 +234,7 @@ impl Importable for FVTXHeader {
         let section_index = reader.read_be_to_u16()?;
         let nb_vertices = reader.read_be_to_u32()?;
         let vertex_skin_count = reader.read_to_u8()?;
+        reader.seek(SeekFrom::Current(3))?;
         let attribute_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let attribute_index_group_offset = Pointer::read_new_rel_i32_be(reader)?;
         let buffer_array_offset = Pointer::read_new_rel_i32_be(reader)?;

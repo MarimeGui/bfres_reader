@@ -224,6 +224,11 @@ impl Importable for FVTX {
 
 impl Importable for FVTXHeader {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTXHeader, Box<Error>> {
+        let mut magic_number = [0u8; 4];
+        reader.read_exact(&mut magic_number)?;
+        if magic_number != [b'F', b'V', b'T', b'X'] {
+            return Err(Box::new(WrongMagicNumber{}))
+        }
         let attribute_count = reader.read_to_u8()?;
         let buffer_count = reader.read_to_u8()?;
         let section_index = reader.read_be_to_u16()?;

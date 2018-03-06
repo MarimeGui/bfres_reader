@@ -3,7 +3,6 @@ use std::error::Error;
 use std::io::{Read, Seek};
 use Importable;
 use util::Pointer;
-use error::WrongMagicNumber;
 
 pub struct FTEX {
     pub header: FTEXHeader
@@ -26,7 +25,7 @@ pub struct FTEXHeader {
     pub pitch: u32,
     pub mipmap_offsets: [u32; 13],
     pub first_mipmap: u32,
-    pub nb_mipmaps2: u32,
+    pub nb_slices: u32,
     pub component_selector: [u8; 4],
     pub texture_registers: [u32; 5],
     pub array_length: u32,
@@ -51,9 +50,7 @@ impl Importable for FTEXHeader {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FTEXHeader, Box<Error>> {
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        if magic_number != [b'F', b'T', b'E', b'X'] {
-            return Err(Box::new(WrongMagicNumber{}))
-        }
+        assert_eq!(magic_number, [b'F', b'T', b'E', b'X'], "Wrong magic number");
         let dimension = reader.read_be_to_u32()?;
         let texture_width = reader.read_be_to_u32()?;
         let texture_height = reader.read_be_to_u32()?;
@@ -82,7 +79,6 @@ impl Importable for FTEXHeader {
         let first_slice = reader.read_be_to_u32()?;
         assert_eq!(first_slice, 0, "First slice is always 0");
         let nb_slices = reader.read_be_to_u32()?;
-        assert_eq!(nb_slices, 1, "Number of slices is always 1");
         let mut component_selector: [u8; 4] = [0u8; 4];
         reader.read_exact(&mut component_selector)?;
         let mut texture_registers: [u32; 5] = [0u32; 5];
@@ -115,7 +111,7 @@ impl Importable for FTEXHeader {
             pitch,
             mipmap_offsets,
             first_mipmap,
-            nb_mipmaps2,
+            nb_slices,
             component_selector,
             texture_registers,
             array_length,

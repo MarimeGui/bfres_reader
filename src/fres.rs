@@ -15,8 +15,6 @@ use fvis::FVIS;
 use fsha::FSHA;
 use fscn::FSCN;
 use embedded::Embedded;
-use error::WrongMagicNumber;
-use error::NoRuntime;
 use util::Pointer;
 use util::align_on_4_bytes;
 
@@ -74,23 +72,15 @@ impl Importable for FRESHeader {
         // Magic Number
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        if magic_number != [b'F', b'R', b'E', b'S'] {
-            return Err(Box::new(WrongMagicNumber{}))
-        }
+        assert_eq!(magic_number, [b'F', b'R', b'E', b'S'], "Wrong magic number");
         // Version
         let version = reader.read_be_to_u32()?;
         // Byte Order Mark
         let bom = reader.read_be_to_u16()?;
-        if bom != 0xFEFF {
-            // Not supposed to see little-endian on the console, returning error here for convenience
-            return Err(Box::new(WrongMagicNumber{}))
-        }
+        assert_eq!(bom, 0xFEFF, "This file is not in Big Endian, Little Endian not supported");
         // Header Length
         let header_length = reader.read_be_to_u16()?;
-        if header_length != 0x0010 {
-            // Again, not supposed to be bigger than 16 bytes
-            return Err(Box::new(WrongMagicNumber{}))
-        }
+        assert_eq!(header_length, 0x0010, "Incorrect header length");
         // File Length
         let file_length = reader.read_be_to_u32()?;
         // File Alignment
@@ -116,9 +106,7 @@ impl Importable for FRESHeader {
         }
         // User Pointer
         let user_pointer = reader.read_be_to_u32()?;
-        if user_pointer != 0 {
-            return Err(Box::new(NoRuntime {}))
-        }
+        assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
         Ok(FRESHeader {
             version,
             file_length,

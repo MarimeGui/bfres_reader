@@ -2,8 +2,6 @@ use ez_io::ReadE;
 use IndexGroup;
 use Importable;
 use util::Pointer;
-use error::WrongMagicNumber;
-use error::NoRuntime;
 use std::io::{Read, Seek, SeekFrom};
 use std::error::Error;
 
@@ -191,9 +189,7 @@ impl Importable for FMDLHeader {
         // Magic Number
         let mut magic_number: [u8; 4] = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        if magic_number != [b'F', b'M', b'D', b'L'] {
-            return Err(Box::new(WrongMagicNumber {}));
-        }
+        assert_eq!(magic_number, [b'F', b'M', b'D', b'L'], "Wrong magic number");
         // File Name Offset
         let file_name_offset = Pointer::read_new_rel_i32_be(reader)?;
         // File Path Offset
@@ -220,9 +216,7 @@ impl Importable for FMDLHeader {
         let total_nb_vertices = reader.read_be_to_u32()?;
         // User Pointer
         let user_pointer = reader.read_be_to_u32()?;
-        if user_pointer != 0 {
-            return Err(Box::new(NoRuntime {}))
-        }
+        assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
         Ok(FMDLHeader {
             file_name_offset,
             file_path_offset,
@@ -263,9 +257,7 @@ impl Importable for FVTXHeader {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTXHeader, Box<Error>> {
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        if magic_number != [b'F', b'V', b'T', b'X'] {
-            return Err(Box::new(WrongMagicNumber{}))
-        }
+        assert_eq!(magic_number, [b'F', b'V', b'T', b'X'], "Wrong magic number");
         let attribute_count = reader.read_to_u8()?;
         let buffer_count = reader.read_to_u8()?;
         let section_index = reader.read_be_to_u16()?;
@@ -276,9 +268,7 @@ impl Importable for FVTXHeader {
         let attribute_index_group_offset = Pointer::read_new_rel_i32_be(reader)?;
         let buffer_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer: u32 = reader.read_be_to_u32()?;
-        if user_pointer != 0 {
-            return Err(Box::new(NoRuntime {}))
-        }
+        assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
         Ok(FVTXHeader {
             attribute_count,
             buffer_count,
@@ -312,20 +302,14 @@ impl Importable for FVTXAttributes {
 impl Importable for FVTXBuffer {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTXBuffer, Box<Error>> {
         let data_pointer = reader.read_be_to_u32()?;
-        if data_pointer != 0 {
-            return Err(Box::new(NoRuntime {}))
-        }
+        assert_eq!(data_pointer, 0, "Data pointer is always 0 in files");
         let size = reader.read_be_to_u32()?;
         let handle = reader.read_be_to_u32()?;
-        if handle != 0 {
-            return Err(Box::new(NoRuntime {}))
-        }
+        assert_eq!(handle, 0, "Handle is always 0 in files");
         let stride = reader.read_be_to_u16()?;
         let buffering_count = reader.read_be_to_u16()?;
         let context_pointer = reader.read_be_to_u32()?;
-        if context_pointer != 0 {
-            return Err(Box::new(NoRuntime {}))
-        }
+        assert_eq!(context_pointer, 0, "Context pointer is always 0 in files");
         let data_offset = Pointer::read_new_rel_i32_be(reader)?;
         Ok(FVTXBuffer {
             data_pointer,
@@ -352,9 +336,7 @@ impl Importable for FMATHeader {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FMATHeader, Box<Error>> {
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        if magic_number != [b'F', b'M', b'A', b'T'] {
-            return Err(Box::new(WrongMagicNumber{}))
-        }
+        assert_eq!(magic_number, [b'F', b'M', b'A', b'T'], "Wrong magic number");
         let material_name_offset = Pointer::read_new_rel_i32_be(reader)?;
         let material_flags = reader.read_be_to_u32()?;
         let section_index = reader.read_be_to_u16()?;
@@ -378,9 +360,7 @@ impl Importable for FMATHeader {
         let user_data_index_group_offset = Pointer::read_new_rel_i32_be(reader)?;
         let volatile_flags_data_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer = reader.read_be_to_i32()?;
-        if user_pointer != 0 {
-            return Err(Box::new(NoRuntime {}))
-        }
+        assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
         Ok(FMATHeader {
             material_name_offset,
             material_flags,

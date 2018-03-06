@@ -25,7 +25,7 @@ pub struct FRES {
 }
 
 pub struct FRESHeader {
-    pub version: u32,
+    pub version: [u8; 4],
     pub file_length: u32,
     pub file_alignment: u32,
     pub file_name_offset: Pointer,
@@ -74,7 +74,8 @@ impl Importable for FRESHeader {
         reader.read_exact(&mut magic_number)?;
         assert_eq!(magic_number, [b'F', b'R', b'E', b'S'], "Wrong magic number");
         // Version
-        let version = reader.read_be_to_u32()?;
+        let mut version = [0u8; 4];
+        reader.read_exact(&mut version)?;
         // Byte Order Mark
         let bom = reader.read_be_to_u16()?;
         assert_eq!(bom, 0xFEFF, "This file is not in Big Endian, Little Endian not supported");

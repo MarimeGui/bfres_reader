@@ -25,6 +25,7 @@ fn main() {
         let mut bfres_cursor: Cursor<Vec<u8>> = Cursor::new(output);
         let bfres_file = FRES::import(&mut bfres_cursor).unwrap();
         println!("Read File successfully !");
+        println!("Version v{}.{}.{}.{}", bfres_file.header.version[0], bfres_file.header.version[1], bfres_file.header.version[2], bfres_file.header.version[3]);
         println!("{} sub-files", bfres_file.header.get_total_sub_file_count());
         // FMDL
         if let Some(a) = bfres_file.sub_file_index_groups.model_data {

@@ -34,7 +34,7 @@ fn main() {
                 let fmdl = fmdl_entry.get_data(&mut bfres_cursor).unwrap();
                 println!("    Total number of vertices: {}", fmdl.header.total_nb_vertices);
                 // FVTX
-                if fmdl.fvtx_array.entries.is_empty() {
+                if !fmdl.fvtx_array.entries.is_empty() {
                     println!("    {} FVTX:", fmdl.fvtx_array.entries.len());
                     for fvtx_entry in fmdl.fvtx_array.entries {
                         println!("    --- @ 0x{:x}", fvtx_entry.data_pointer.get_abs_pos().unwrap());
@@ -43,7 +43,7 @@ fn main() {
                     }
                 }
                 // FMAT
-                if fmdl.fmat_index_group.entries.is_empty() {
+                if !fmdl.fmat_index_group.entries.is_empty() {
                     println!("    {} FMAT:", fmdl.fmat_index_group.entries.len());
                     for fmat_entry in fmdl.fmat_index_group.entries {
                         println!("    --- {} @ 0x{:x}", fmat_entry.get_name(&mut bfres_cursor).unwrap(), fmat_entry.data_pointer.get_abs_pos().unwrap());
@@ -56,7 +56,7 @@ fn main() {
                 println!("    --- @ 0x{:x}", fmdl.header.fskl_offset.get_abs_pos().unwrap());
                 println!("        {} bones", fmdl.fskl.header.bone_array_count);
                 // FSHP
-                if fmdl.fshp_index_group.entries.is_empty() {
+                if !fmdl.fshp_index_group.entries.is_empty() {
                     println!("    {} FSHP:", fmdl.fshp_index_group.entries.len());
                     for fshp_entry in fmdl.fshp_index_group.entries {
                         println!("    --- {} @ 0x{:x}", fshp_entry.get_name(&mut bfres_cursor).unwrap(), fshp_entry.data_pointer.get_abs_pos().unwrap());

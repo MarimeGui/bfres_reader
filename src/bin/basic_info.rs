@@ -52,6 +52,10 @@ fn main() {
                             println!("        {} texture references", fmat.header.texture_reference_count);
                         }
                     }
+                    // FSKL
+                    println!("    1 FSKL:");
+                    println!("    --- @ 0x{:x}", fmdl.header.fskl_offset.get_abs_pos().unwrap());
+                    println!("        {} bones", fmdl.fskl.header.bone_array_count);
                     // FSHP
                     if fmdl.fshp_index_group.entries.len() > 0 {
                         println!("    {} FSHP:", fmdl.fshp_index_group.entries.len());

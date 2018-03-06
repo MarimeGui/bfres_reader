@@ -116,11 +116,18 @@ pub struct FMATShaderAssign {
 }
 
 pub struct FSKL {
-
+    pub header: FSKLHeader
 }
 
 pub struct FSKLHeader {
-
+    pub flags: u32,
+    pub bone_array_count: u16,
+    pub smooth_index_array_count: u16,
+    pub rigid_index_array_count: u16,
+    pub bone_index_group_offset: Pointer,
+    pub bone_array_offset: Pointer,
+    pub smooth_index_array_offset: Pointer,
+    pub smooth_matrix_array_offset: Pointer
 }
 
 pub struct FSKLBone {
@@ -402,8 +409,42 @@ impl Importable for FMATHeader {
 }
 
 impl Importable for FSKL {
-    fn import<R: Read + Seek>(_reader: &mut R) -> Result<FSKL, Box<Error>> {
-        Ok(FSKL {})
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FSKL, Box<Error>> {
+        let header = FSKLHeader::import(reader)?;
+        Ok(FSKL {
+            header
+        })
+    }
+}
+
+impl Importable for FSKLHeader {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FSKLHeader, Box<Error>> {
+        let start = reader.seek(SeekFrom::Current(0))?;
+        let mut magic_number = [0u8; 4];
+        reader.read_exact(&mut magic_number)?;
+        assert_eq!(magic_number, [b'F', b'S', b'K', b'L'], "Wrong magic number");
+        let flags = reader.read_be_to_u32()?;
+        let bone_array_count = reader.read_be_to_u16()?;
+        let smooth_index_array_count = reader.read_be_to_u16()?;
+        let rigid_index_array_count = reader.read_be_to_u16()?;
+        reader.seek(SeekFrom::Current(2))?;
+        let bone_index_group_offset = Pointer::read_new_rel_i32_be(reader)?;
+        let bone_array_offset = Pointer::read_new_rel_i32_be(reader)?;
+        let smooth_index_array_offset = Pointer::read_new_rel_i32_be(reader)?;
+        let smooth_matrix_array_offset = Pointer::read_new_rel_i32_be(reader)?;
+        let user_pointer = reader.read_be_to_u32()?;
+        println!("Read 0x{:x} bytes", reader.seek(SeekFrom::Current(0))? - start);
+        assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
+        Ok(FSKLHeader {
+            flags,
+            bone_array_count,
+            smooth_index_array_count,
+            rigid_index_array_count,
+            bone_index_group_offset,
+            bone_array_offset,
+            smooth_index_array_offset,
+            smooth_matrix_array_offset
+        })
     }
 }
 

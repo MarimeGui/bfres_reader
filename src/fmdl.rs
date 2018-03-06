@@ -3,6 +3,7 @@ use IndexGroup;
 use Importable;
 use util::Pointer;
 use error::WrongMagicNumber;
+use error::NoRuntime;
 use std::io::{Read, Seek, SeekFrom};
 use std::error::Error;
 
@@ -219,6 +220,9 @@ impl Importable for FMDLHeader {
         let total_nb_vertices = reader.read_be_to_u32()?;
         // User Pointer
         let user_pointer = reader.read_be_to_u32()?;
+        if user_pointer != 0 {
+            return Err(Box::new(NoRuntime {}))
+        }
         Ok(FMDLHeader {
             file_name_offset,
             file_path_offset,
@@ -272,6 +276,9 @@ impl Importable for FVTXHeader {
         let attribute_index_group_offset = Pointer::read_new_rel_i32_be(reader)?;
         let buffer_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer: u32 = reader.read_be_to_u32()?;
+        if user_pointer != 0 {
+            return Err(Box::new(NoRuntime {}))
+        }
         Ok(FVTXHeader {
             attribute_count,
             buffer_count,
@@ -305,11 +312,20 @@ impl Importable for FVTXAttributes {
 impl Importable for FVTXBuffer {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTXBuffer, Box<Error>> {
         let data_pointer = reader.read_be_to_u32()?;
+        if data_pointer != 0 {
+            return Err(Box::new(NoRuntime {}))
+        }
         let size = reader.read_be_to_u32()?;
         let handle = reader.read_be_to_u32()?;
+        if handle != 0 {
+            return Err(Box::new(NoRuntime {}))
+        }
         let stride = reader.read_be_to_u16()?;
         let buffering_count = reader.read_be_to_u16()?;
         let context_pointer = reader.read_be_to_u32()?;
+        if context_pointer != 0 {
+            return Err(Box::new(NoRuntime {}))
+        }
         let data_offset = Pointer::read_new_rel_i32_be(reader)?;
         Ok(FVTXBuffer {
             data_pointer,
@@ -362,6 +378,9 @@ impl Importable for FMATHeader {
         let user_data_index_group_offset = Pointer::read_new_rel_i32_be(reader)?;
         let volatile_flags_data_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer = reader.read_be_to_i32()?;
+        if user_pointer != 0 {
+            return Err(Box::new(NoRuntime {}))
+        }
         Ok(FMATHeader {
             material_name_offset,
             material_flags,

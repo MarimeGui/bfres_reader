@@ -32,3 +32,18 @@ impl Display for RelativePointerDataInvalid {
         write!(f, "Yea error lol")
     }
 }
+
+#[derive(Debug)]
+pub struct NoRuntime;
+
+impl Error for NoRuntime {
+    fn description(&self) -> &str {
+        "Found some runtime data that was set; We only read files here"
+    }
+}
+
+impl Display for NoRuntime {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "Yea error lol")
+    }
+}

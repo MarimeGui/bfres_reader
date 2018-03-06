@@ -16,6 +16,7 @@ use fsha::FSHA;
 use fscn::FSCN;
 use embedded::Embedded;
 use error::WrongMagicNumber;
+use error::NoRuntime;
 use util::Pointer;
 use util::align_on_4_bytes;
 
@@ -118,6 +119,9 @@ impl Importable for FRESHeader {
         }
         // User Pointer
         let user_pointer = reader.read_be_to_u32()?;
+        if user_pointer != 0 {
+            return Err(Box::new(NoRuntime {}))
+        }
         Ok(FRESHeader {
             version,
             bom,

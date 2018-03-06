@@ -140,6 +140,7 @@ pub struct FSHPVisibilityGroupTree {
 impl Importable for FMDL {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FMDL, Box<Error>> {
         let header = FMDLHeader::import(reader)?;
+        header.fvtx_array_offset.seek_abs_pos(reader)?;
         let mut fvtx_array: Vec<FVTX> = Vec::with_capacity(header.fvtx_count as usize);
         for _ in 0..header.fvtx_count {
             fvtx_array.push(FVTX::import(reader)?);

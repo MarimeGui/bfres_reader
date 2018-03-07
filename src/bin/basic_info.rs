@@ -33,14 +33,19 @@ fn main() {
             for (count, fmdl_entry) in a.entries.iter().enumerate() {
                 println!("--- {} @ 0x{:x}", fmdl_entry.get_name(&mut bfres_cursor).unwrap(), fmdl_entry.data_pointer.get_abs_pos().unwrap());
                 let fmdl = fmdl_entry.get_data(&mut bfres_cursor).unwrap();
-                println!("    Total number of vertices: {}", fmdl.header.total_nb_vertices);
+                println!("    {} vertices", fmdl.header.total_nb_vertices);
                 // FVTX
                 if !fmdl.fvtx_array.entries.is_empty() {
                     println!("    {} FVTX:", fmdl.fvtx_array.entries.len());
                     for fvtx_entry in fmdl.fvtx_array.entries {
                         println!("    --- @ 0x{:x}", fvtx_entry.data_pointer.get_abs_pos().unwrap());
                         let fvtx = fvtx_entry.get_data(&mut bfres_cursor).unwrap();
-                        println!("         {} vertices", fvtx.header.nb_vertices);
+                        println!("        {} vertices", fvtx.header.nb_vertices);
+                        println!("        {} attributes:", fvtx.header.attribute_count);
+                        for attribute_entry in fvtx.attributes.entries {
+                            println!("        --- {} @ 0x{:x}", attribute_entry.get_name(&mut bfres_cursor).unwrap(), attribute_entry.data_pointer.get_abs_pos().unwrap());
+                            let attribute = attribute_entry.get_data(&mut bfres_cursor).unwrap();
+                        }
                     }
                 }
                 // FMAT
@@ -62,7 +67,7 @@ fn main() {
                     for fshp_entry in fmdl.fshp_index_group.entries {
                         println!("    --- {} @ 0x{:x}", fshp_entry.get_name(&mut bfres_cursor).unwrap(), fshp_entry.data_pointer.get_abs_pos().unwrap());
                         let fshp = fshp_entry.get_data(&mut bfres_cursor).unwrap();
-                        println!("        Vertex skin count: {}", fshp.header.vertex_skin_count);
+                        println!("        {} skin vertices", fshp.header.vertex_skin_count);
                     }
                 }
                 if count > 9 {

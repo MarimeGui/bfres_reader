@@ -74,7 +74,7 @@ fn main() {
                     for fshp_entry in fmdl.fshp_index_group.entries {
                         println!("    --- {} @ 0x{:x}", fshp_entry.get_name(&mut bfres_cursor).unwrap(), fshp_entry.data_pointer.get_abs_pos().unwrap());
                         let fshp = fshp_entry.get_data(&mut bfres_cursor).unwrap();
-                        println!("        {} skin vertices", fshp.header.vertex_skin_count);
+                        println!("        Flags: {}", fshp.header.flags);
                     }
                 }
                 if count > 9 {

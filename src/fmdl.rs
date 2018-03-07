@@ -419,7 +419,6 @@ impl Importable for FSKL {
 
 impl Importable for FSKLHeader {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FSKLHeader, Box<Error>> {
-        let start = reader.seek(SeekFrom::Current(0))?;
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
         assert_eq!(magic_number, [b'F', b'S', b'K', b'L'], "Wrong magic number");
@@ -433,7 +432,6 @@ impl Importable for FSKLHeader {
         let smooth_index_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let smooth_matrix_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer = reader.read_be_to_u32()?;
-        println!("Read 0x{:x} bytes", reader.seek(SeekFrom::Current(0))? - start);
         assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
         Ok(FSKLHeader {
             flags,

@@ -45,6 +45,13 @@ fn main() {
                         for attribute_entry in fvtx.attributes.entries {
                             println!("        --- {} @ 0x{:x}", attribute_entry.get_name(&mut bfres_cursor).unwrap(), attribute_entry.data_pointer.get_abs_pos().unwrap());
                             let attribute = attribute_entry.get_data(&mut bfres_cursor).unwrap();
+                            println!("            Format: 0x{:x}", attribute.format);
+                        }
+                        println!("        {} buffers:", fvtx.header.buffer_count);
+                        for buffer_entry in fvtx.buffers.entries {
+                            println!("        --- @ 0x{:x}", buffer_entry.data_pointer.get_abs_pos().unwrap());
+                            let buffer = buffer_entry.get_data(&mut bfres_cursor).unwrap();
+                            println!("            {} bytes long", buffer.size);
                         }
                     }
                 }

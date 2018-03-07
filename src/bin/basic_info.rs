@@ -75,6 +75,12 @@ fn main() {
                         println!("    --- {} @ 0x{:x}", fshp_entry.get_name(&mut bfres_cursor).unwrap(), fshp_entry.data_pointer.get_abs_pos().unwrap());
                         let fshp = fshp_entry.get_data(&mut bfres_cursor).unwrap();
                         println!("        Flags: {}", fshp.header.flags);
+                        println!("        {} LOD Models:", fshp.header.lod_model_count);
+                        for lod_entry in fshp.lod_model_array.entries {
+                            println!("        --- @ 0x{:x}", lod_entry.data_pointer.get_abs_pos().unwrap());
+                            let lod = lod_entry.get_data(&mut bfres_cursor).unwrap();
+                            println!("            {} points", lod.nb_points);
+                        }
                     }
                 }
                 if count > 9 {

@@ -143,7 +143,8 @@ pub struct FSKLRigidMatrix {
 }
 
 pub struct FSHP {
-    pub header: FSHPHeader
+    pub header: FSHPHeader,
+    pub lod_model_array: DataArray<FSHPLODModel>
 }
 
 pub struct FSHPHeader {
@@ -170,7 +171,13 @@ pub struct FSHPHeader {
 }
 
 pub struct FSHPLODModel {
-
+    pub primitive_type: u32,
+    pub index_format: u32,
+    pub nb_points: u32,
+    pub nb_visibility_groups: u16,
+    pub visibility_group_offset: Pointer,
+    pub index_buffer_offset: Pointer,
+    pub skip_vertices: u32
 }
 
 pub struct FSHPVisibilityGroup {
@@ -449,8 +456,11 @@ impl Importable for FSKLHeader {
 impl Importable for FSHP {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHP, Box<Error>> {
         let header = FSHPHeader::import(reader)?;
+        header.lod_model_offset.seek_abs_pos(reader)?;
+        let lod_model_array = DataArray::new(reader, 0x1C, u32::from(header.lod_model_count))?;
         Ok(FSHP {
-            header
+            header,
+            lod_model_array
         })
     }
 }
@@ -503,6 +513,28 @@ impl Importable for FSHPHeader {
             visibility_group_tree_nodes_offset,
             visibility_group_tree_ranges_offset,
             visibility_group_tree_indices_offset
+        })
+    }
+}
+
+impl Importable  for FSHPLODModel {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHPLODModel, Box<Error>> {
+        let primitive_type = reader.read_be_to_u32()?;
+        let index_format = reader.read_be_to_u32()?;
+        let nb_points = reader.read_be_to_u32()?;
+        let nb_visibility_groups = reader.read_be_to_u16()?;
+        reader.seek(SeekFrom::Current(2))?;
+        let visibility_group_offset = Pointer::read_new_rel_i32_be(reader)?;
+        let index_buffer_offset = Pointer::read_new_rel_i32_be(reader)?;
+        let skip_vertices = reader.read_be_to_u32()?;
+        Ok(FSHPLODModel {
+            primitive_type,
+            index_format,
+            nb_points,
+            nb_visibility_groups,
+            visibility_group_offset,
+            index_buffer_offset,
+            skip_vertices
         })
     }
 }

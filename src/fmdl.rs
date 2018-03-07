@@ -181,11 +181,18 @@ pub struct FSHPLODModel {
 }
 
 pub struct FSHPVisibilityGroup {
-
+    pub index_buffer_offset: Pointer,
+    pub nb_points: u32
 }
 
 pub struct FSHPIndexBuffer {
-
+    pub data_pointer: u32,
+    pub size: u32,
+    pub handle: u32,
+    pub stride: u16,
+    pub buffering_count: u16,
+    pub context_pointer: u32,
+    pub data_offset: Pointer
 }
 
 pub struct FSHPVisibilityGroupTree {
@@ -517,7 +524,7 @@ impl Importable for FSHPHeader {
     }
 }
 
-impl Importable  for FSHPLODModel {
+impl Importable for FSHPLODModel {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHPLODModel, Box<Error>> {
         let primitive_type = reader.read_be_to_u32()?;
         let index_format = reader.read_be_to_u32()?;
@@ -535,6 +542,62 @@ impl Importable  for FSHPLODModel {
             visibility_group_offset,
             index_buffer_offset,
             skip_vertices
+        })
+    }
+}
+
+impl FSHPLODModel {
+    pub fn get_visibility_groups<R: Read + Seek>(&self, reader: &mut R) -> Result<DataArray<FSHPVisibilityGroup>, Box<Error>> {
+        self.visibility_group_offset.seek_abs_pos(reader)?;
+        let array = DataArray::new(reader, 0x18, u32::from(self.nb_visibility_groups))?;
+        Ok(array)
+    }
+    pub fn get_direct_index_buffer<R: Read + Seek>(&self, reader: &mut R) -> Result<FSHPIndexBuffer, Box<Error>> {
+        self.index_buffer_offset.seek_abs_pos(reader)?;
+        let group = FSHPIndexBuffer::import(reader)?;
+        Ok(group)
+    }
+}
+
+impl Importable for FSHPVisibilityGroup {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHPVisibilityGroup, Box<Error>> {
+        let index_buffer_offset = Pointer::read_new_rel_i32_be(reader)?;  // Should be u32
+        let nb_points = reader.read_be_to_u32()?;
+        Ok(FSHPVisibilityGroup {
+            index_buffer_offset,
+            nb_points
+        })
+    }
+}
+
+impl FSHPVisibilityGroup {
+    pub fn get_index_buffer<R: Read + Seek>(&self, reader: &mut R) -> Result<FSHPIndexBuffer, Box<Error>> {
+        self.index_buffer_offset.seek_abs_pos(reader)?;
+        let index_buffer = FSHPIndexBuffer::import(reader)?;
+        Ok(index_buffer)
+    }
+}
+
+impl Importable for FSHPIndexBuffer {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHPIndexBuffer, Box<Error>> {
+        let data_pointer = reader.read_be_to_u32()?;
+        assert_eq!(data_pointer, 0, "Data pointer is always 0 in files");
+        let size = reader.read_be_to_u32()?;
+        let handle = reader.read_be_to_u32()?;
+        assert_eq!(handle, 0, "Handle is always 0 in files");
+        let stride = reader.read_be_to_u16()?;
+        let buffering_count = reader.read_be_to_u16()?;
+        let context_pointer = reader.read_be_to_u32()?;
+        assert_eq!(context_pointer, 0, "Context pointer is always 0 in files");
+        let data_offset = Pointer::read_new_rel_i32_be(reader)?;
+        Ok(FSHPIndexBuffer {
+            data_pointer,
+            size,
+            handle,
+            stride,
+            buffering_count,
+            context_pointer,
+            data_offset
         })
     }
 }

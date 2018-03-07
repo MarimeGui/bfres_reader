@@ -80,6 +80,7 @@ fn main() {
                             println!("        --- @ 0x{:x}", lod_entry.data_pointer.get_abs_pos().unwrap());
                             let lod = lod_entry.get_data(&mut bfres_cursor).unwrap();
                             println!("            {} points", lod.nb_points);
+                            println!("            {} visibility groups", lod.nb_visibility_groups);
                         }
                     }
                 }

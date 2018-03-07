@@ -17,3 +17,18 @@ impl Display for RelativePointerDataInvalid {
         write!(f, "Yea error lol")
     }
 }
+
+#[derive(Debug)]
+pub struct MissingFVTXAttributeFormat;
+
+impl Error for MissingFVTXAttributeFormat {
+    fn description(&self) -> &str {
+        "A format value was not recognized"
+    }
+}
+
+impl Display for MissingFVTXAttributeFormat {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "Yea error lol")
+    }
+}

@@ -3,7 +3,9 @@ use IndexGroup;
 use DataArray;
 use Importable;
 use util::Pointer;
+use error::MissingFVTXAttributeFormat;
 use std::io::{Read, Seek, SeekFrom};
+use std::fmt::{Display, Formatter, Result as FMTResult};
 use std::error::Error;
 
 pub struct FMDL {
@@ -52,7 +54,31 @@ pub struct FVTXAttributes {
     pub attribute_name_offset: Pointer,
     pub buffer_info_index: u8,
     pub buffer_offset: u16,  // Unsure if points to Info or actual buffer
-    pub format: u32
+    pub format: FVTXAttributesFormats
+}
+
+pub enum FVTXAttributesFormats {
+    U8ToF32,
+    TwoU8ToTwoF32,
+    TwoU16ToTwoF32,
+    FourU8ToFourF32,
+    U8ToU32,
+    TwoU8ToTwoU32,
+    FourU8ToFourU32,
+    I8ToF32,
+    TwoI8ToF32,
+    TwoI16ToTwoF32,
+    FourI8ToFourF32,
+    ThreeI10toThreeF32,
+    I8,
+    TwoI8,
+    FourI8,
+    F32,
+    TwoF16ToTwoF32,
+    TwoF32,
+    FourF16ToFourF32,
+    ThreeF32,
+    FourF32
 }
 
 pub struct FVTXBufferInfo {
@@ -277,7 +303,7 @@ impl Importable for FVTX {
         header.attribute_index_group_offset.seek_abs_pos(reader)?;
         let attributes = IndexGroup::import(reader)?;
         header.buffer_info_array_offset.seek_abs_pos(reader)?;
-        let buffer_info_array: DataArray<FVTXBufferInfo> = DataArray::new(reader, 0x18, u32::from(header.buffer_info_count))?;
+        let buffer_info_array = DataArray::new(reader, 0x18, u32::from(header.buffer_info_count))?;
         Ok(FVTX {
             header,
             attributes_index_group: attributes,
@@ -322,13 +348,65 @@ impl Importable for FVTXAttributes {
         let buffer_info_index = reader.read_to_u8()?;
         reader.seek(SeekFrom::Current(1))?;
         let buffer_offset = reader.read_be_to_u16()?;
-        let format = reader.read_be_to_u32()?;
+        let format = match reader.read_be_to_u32()? {
+            0x0000 => FVTXAttributesFormats::U8ToF32,
+            0x0004 => FVTXAttributesFormats::TwoU8ToTwoF32,
+            0x0007 => FVTXAttributesFormats::TwoU16ToTwoF32,
+            0x000A => FVTXAttributesFormats::FourU8ToFourF32,
+            0x0100 => FVTXAttributesFormats::U8ToU32,
+            0x0104 => FVTXAttributesFormats::TwoU8ToTwoU32,
+            0x010A => FVTXAttributesFormats::FourU8ToFourU32,
+            0x0200 => FVTXAttributesFormats::I8ToF32,
+            0x0204 => FVTXAttributesFormats::TwoI8ToF32,
+            0x0207 => FVTXAttributesFormats::TwoI16ToTwoF32,
+            0x020A => FVTXAttributesFormats::FourI8ToFourF32,
+            0x020B => FVTXAttributesFormats::ThreeI10toThreeF32,
+            0x0300 => FVTXAttributesFormats::I8,
+            0x0304 => FVTXAttributesFormats::TwoI8,
+            0x030A => FVTXAttributesFormats::FourI8,
+            0x0806 => FVTXAttributesFormats::F32,
+            0x0808 => FVTXAttributesFormats::TwoF16ToTwoF32,
+            0x080D => FVTXAttributesFormats::TwoF32,
+            0x080F => FVTXAttributesFormats::FourF16ToFourF32,
+            0x0811 => FVTXAttributesFormats::ThreeF32,
+            0x0813 => FVTXAttributesFormats::FourF32,
+            _ => return Err(Box::new(MissingFVTXAttributeFormat {}))
+        };
         Ok(FVTXAttributes {
             attribute_name_offset,
             buffer_info_index,
             buffer_offset,
             format
         })
+    }
+}
+
+impl Display for FVTXAttributesFormats {
+    fn fmt(&self, f: &mut Formatter) -> FMTResult {
+        let text = match *self {
+            FVTXAttributesFormats::U8ToF32 => "One u8 to one F32",
+            FVTXAttributesFormats::TwoU8ToTwoF32 => "Two u8 to two f32",
+            FVTXAttributesFormats::TwoU16ToTwoF32 => "Two u16 to two f32",
+            FVTXAttributesFormats::FourU8ToFourF32 => "Four u8 to four f32",
+            FVTXAttributesFormats::U8ToU32 => "One u8 to one u32",
+            FVTXAttributesFormats::TwoU8ToTwoU32 => "Two u8 to two u32",
+            FVTXAttributesFormats::FourU8ToFourU32 => "Four u8 to four u32",
+            FVTXAttributesFormats::I8ToF32 => "One i8 to one f32",
+            FVTXAttributesFormats::TwoI8ToF32 => "Two i8 to one f32",
+            FVTXAttributesFormats::TwoI16ToTwoF32 => "Two i16 to two f32",
+            FVTXAttributesFormats::FourI8ToFourF32 => "Four i8 to four f32",
+            FVTXAttributesFormats::ThreeI10toThreeF32 => "Three i10 to three f32",
+            FVTXAttributesFormats::I8 => "One i8",
+            FVTXAttributesFormats::TwoI8 => "Two i8",
+            FVTXAttributesFormats::FourI8 => "Four i8",
+            FVTXAttributesFormats::F32 => "One f32",
+            FVTXAttributesFormats::TwoF16ToTwoF32 => "Two f16 to two f32",
+            FVTXAttributesFormats::TwoF32 => "Two f32",
+            FVTXAttributesFormats::FourF16ToFourF32 => "Four f16 to four f32",
+            FVTXAttributesFormats::ThreeF32 => "Three f32",
+            FVTXAttributesFormats::FourF32 => "Four f32",
+        };
+        write!(f, "{}", text)
     }
 }
 

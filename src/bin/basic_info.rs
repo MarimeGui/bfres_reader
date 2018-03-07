@@ -42,16 +42,16 @@ fn main() {
                         let fvtx = fvtx_entry.get_data(&mut bfres_cursor).unwrap();
                         println!("        {} vertices", fvtx.header.nb_vertices);
                         println!("        {} attributes:", fvtx.header.attribute_count);
-                        for attribute_entry in fvtx.attributes.entries {
+                        for attribute_entry in fvtx.attributes_index_group.entries {
                             println!("        --- {} @ 0x{:x}", attribute_entry.get_name(&mut bfres_cursor).unwrap(), attribute_entry.data_pointer.get_abs_pos().unwrap());
                             let attribute = attribute_entry.get_data(&mut bfres_cursor).unwrap();
                             println!("            Format: 0x{:x}", attribute.format);
                         }
-                        println!("        {} buffers:", fvtx.header.buffer_count);
-                        for buffer_entry in fvtx.buffers.entries {
-                            println!("        --- @ 0x{:x}", buffer_entry.data_pointer.get_abs_pos().unwrap());
-                            let buffer = buffer_entry.get_data(&mut bfres_cursor).unwrap();
-                            println!("            {} bytes long", buffer.size);
+                        println!("        {} buffer info:", fvtx.header.buffer_info_count);
+                        for buffer_info_entry in fvtx.buffer_info_array.entries {
+                            println!("        --- @ 0x{:x}", buffer_info_entry.data_pointer.get_abs_pos().unwrap());
+                            let buffer_info = buffer_info_entry.get_data(&mut bfres_cursor).unwrap();
+                            println!("            {} bytes long", buffer_info.size);
                         }
                     }
                 }

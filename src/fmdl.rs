@@ -32,30 +32,30 @@ pub struct FMDLHeader {
 
 pub struct FVTX {
     pub header: FVTXHeader,
-    pub attributes: IndexGroup<FVTXAttributes>,
-    pub buffers: DataArray<FVTXBuffer>
+    pub attributes_index_group: IndexGroup<FVTXAttributes>,
+    pub buffer_info_array: DataArray<FVTXBufferInfo>
 }
 
 pub struct FVTXHeader {
     pub attribute_count: u8,
-    pub buffer_count: u8,
+    pub buffer_info_count: u8,
     pub section_index: u16,
     pub nb_vertices: u32,
     pub vertex_skin_count: u8,
     pub attribute_array_offset: Pointer,
     pub attribute_index_group_offset: Pointer,
-    pub buffer_array_offset: Pointer,
+    pub buffer_info_array_offset: Pointer,
     pub user_pointer: u32
 }
 
 pub struct FVTXAttributes {
     pub attribute_name_offset: Pointer,
-    pub buffer_index: u8,
-    pub buffer_offset: u16,
+    pub buffer_info_index: u8,
+    pub buffer_offset: u16,  // Unsure if points to Info or actual buffer
     pub format: u32
 }
 
-pub struct FVTXBuffer {
+pub struct FVTXBufferInfo {
     pub data_pointer: u32,
     pub size: u32,
     pub handle: u32,
@@ -176,16 +176,16 @@ pub struct FSHPLODModel {
     pub nb_points: u32,
     pub nb_visibility_groups: u16,
     pub visibility_group_offset: Pointer,
-    pub index_buffer_offset: Pointer,
+    pub buffer_info_offset: Pointer,
     pub skip_vertices: u32
 }
 
 pub struct FSHPVisibilityGroup {
-    pub index_buffer_offset: Pointer,
+    pub buffer_info_offset: Pointer,
     pub nb_points: u32
 }
 
-pub struct FSHPIndexBuffer {
+pub struct FSHPBufferInfo {
     pub data_pointer: u32,
     pub size: u32,
     pub handle: u32,
@@ -276,12 +276,12 @@ impl Importable for FVTX {
         let header = FVTXHeader::import(reader)?;
         header.attribute_index_group_offset.seek_abs_pos(reader)?;
         let attributes = IndexGroup::import(reader)?;
-        header.buffer_array_offset.seek_abs_pos(reader)?;
-        let buffers: DataArray<FVTXBuffer> = DataArray::new(reader, 0x18, u32::from(header.buffer_count))?;
+        header.buffer_info_array_offset.seek_abs_pos(reader)?;
+        let buffer_info_array: DataArray<FVTXBufferInfo> = DataArray::new(reader, 0x18, u32::from(header.buffer_info_count))?;
         Ok(FVTX {
             header,
-            attributes,
-            buffers
+            attributes_index_group: attributes,
+            buffer_info_array
         })
     }
 }
@@ -292,25 +292,25 @@ impl Importable for FVTXHeader {
         reader.read_exact(&mut magic_number)?;
         assert_eq!(magic_number, [b'F', b'V', b'T', b'X'], "Wrong magic number");
         let attribute_count = reader.read_to_u8()?;
-        let buffer_count = reader.read_to_u8()?;
+        let buffer_info_count = reader.read_to_u8()?;
         let section_index = reader.read_be_to_u16()?;
         let nb_vertices = reader.read_be_to_u32()?;
         let vertex_skin_count = reader.read_to_u8()?;
         reader.seek(SeekFrom::Current(3))?;
         let attribute_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let attribute_index_group_offset = Pointer::read_new_rel_i32_be(reader)?;
-        let buffer_array_offset = Pointer::read_new_rel_i32_be(reader)?;
+        let buffer_info_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer: u32 = reader.read_be_to_u32()?;
         assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
         Ok(FVTXHeader {
             attribute_count,
-            buffer_count,
+            buffer_info_count,
             section_index,
             nb_vertices,
             vertex_skin_count,
             attribute_array_offset,
             attribute_index_group_offset,
-            buffer_array_offset,
+            buffer_info_array_offset,
             user_pointer
         })
     }
@@ -319,21 +319,21 @@ impl Importable for FVTXHeader {
 impl Importable for FVTXAttributes {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTXAttributes, Box<Error>> {
         let attribute_name_offset = Pointer::read_new_rel_i32_be(reader)?;
-        let buffer_index = reader.read_to_u8()?;
+        let buffer_info_index = reader.read_to_u8()?;
         reader.seek(SeekFrom::Current(1))?;
         let buffer_offset = reader.read_be_to_u16()?;
         let format = reader.read_be_to_u32()?;
         Ok(FVTXAttributes {
             attribute_name_offset,
-            buffer_index,
+            buffer_info_index,
             buffer_offset,
             format
         })
     }
 }
 
-impl Importable for FVTXBuffer {
-    fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTXBuffer, Box<Error>> {
+impl Importable for FVTXBufferInfo {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTXBufferInfo, Box<Error>> {
         let data_pointer = reader.read_be_to_u32()?;
         assert_eq!(data_pointer, 0, "Data pointer is always 0 in files");
         let size = reader.read_be_to_u32()?;
@@ -344,7 +344,7 @@ impl Importable for FVTXBuffer {
         let context_pointer = reader.read_be_to_u32()?;
         assert_eq!(context_pointer, 0, "Context pointer is always 0 in files");
         let data_offset = Pointer::read_new_rel_i32_be(reader)?;
-        Ok(FVTXBuffer {
+        Ok(FVTXBufferInfo {
             data_pointer,
             size,
             handle,
@@ -532,7 +532,7 @@ impl Importable for FSHPLODModel {
         let nb_visibility_groups = reader.read_be_to_u16()?;
         reader.seek(SeekFrom::Current(2))?;
         let visibility_group_offset = Pointer::read_new_rel_i32_be(reader)?;
-        let index_buffer_offset = Pointer::read_new_rel_i32_be(reader)?;
+        let buffer_info_offset = Pointer::read_new_rel_i32_be(reader)?;
         let skip_vertices = reader.read_be_to_u32()?;
         Ok(FSHPLODModel {
             primitive_type,
@@ -540,7 +540,7 @@ impl Importable for FSHPLODModel {
             nb_points,
             nb_visibility_groups,
             visibility_group_offset,
-            index_buffer_offset,
+            buffer_info_offset,
             skip_vertices
         })
     }
@@ -552,34 +552,34 @@ impl FSHPLODModel {
         let array = DataArray::new(reader, 0x18, u32::from(self.nb_visibility_groups))?;
         Ok(array)
     }
-    pub fn get_direct_index_buffer<R: Read + Seek>(&self, reader: &mut R) -> Result<FSHPIndexBuffer, Box<Error>> {
-        self.index_buffer_offset.seek_abs_pos(reader)?;
-        let group = FSHPIndexBuffer::import(reader)?;
-        Ok(group)
+    pub fn get_direct_buffer_info<R: Read + Seek>(&self, reader: &mut R) -> Result<FSHPBufferInfo, Box<Error>> {
+        self.buffer_info_offset.seek_abs_pos(reader)?;
+        let info = FSHPBufferInfo::import(reader)?;
+        Ok(info)
     }
 }
 
 impl Importable for FSHPVisibilityGroup {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHPVisibilityGroup, Box<Error>> {
-        let index_buffer_offset = Pointer::read_new_rel_i32_be(reader)?;  // Should be u32
+        let buffer_info_offset = Pointer::read_new_rel_i32_be(reader)?;  // Should be u32
         let nb_points = reader.read_be_to_u32()?;
         Ok(FSHPVisibilityGroup {
-            index_buffer_offset,
+            buffer_info_offset,
             nb_points
         })
     }
 }
 
 impl FSHPVisibilityGroup {
-    pub fn get_index_buffer<R: Read + Seek>(&self, reader: &mut R) -> Result<FSHPIndexBuffer, Box<Error>> {
-        self.index_buffer_offset.seek_abs_pos(reader)?;
-        let index_buffer = FSHPIndexBuffer::import(reader)?;
-        Ok(index_buffer)
+    pub fn get_index_buffer<R: Read + Seek>(&self, reader: &mut R) -> Result<FSHPBufferInfo, Box<Error>> {
+        self.buffer_info_offset.seek_abs_pos(reader)?;
+        let buffer_info = FSHPBufferInfo::import(reader)?;
+        Ok(buffer_info)
     }
 }
 
-impl Importable for FSHPIndexBuffer {
-    fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHPIndexBuffer, Box<Error>> {
+impl Importable for FSHPBufferInfo {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHPBufferInfo, Box<Error>> {
         let data_pointer = reader.read_be_to_u32()?;
         assert_eq!(data_pointer, 0, "Data pointer is always 0 in files");
         let size = reader.read_be_to_u32()?;
@@ -590,7 +590,7 @@ impl Importable for FSHPIndexBuffer {
         let context_pointer = reader.read_be_to_u32()?;
         assert_eq!(context_pointer, 0, "Context pointer is always 0 in files");
         let data_offset = Pointer::read_new_rel_i32_be(reader)?;
-        Ok(FSHPIndexBuffer {
+        Ok(FSHPBufferInfo {
             data_pointer,
             size,
             handle,

@@ -3,6 +3,7 @@ use std::error::Error;
 use std::io::{Read, Seek};
 use Importable;
 use util::Pointer;
+use error::check_magic_number;
 
 pub struct FTEX {
     pub header: FTEXHeader
@@ -50,7 +51,7 @@ impl Importable for FTEXHeader {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FTEXHeader, Box<Error>> {
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        assert_eq!(magic_number, [b'F', b'T', b'E', b'X'], "Wrong magic number");
+        check_magic_number(magic_number, [b'F', b'T', b'E', b'X'])?;
         let dimension = reader.read_be_to_u32()?;
         let texture_width = reader.read_be_to_u32()?;
         let texture_height = reader.read_be_to_u32()?;

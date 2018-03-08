@@ -7,6 +7,7 @@ use error::{MissingFVTXAttributeFormat, MissingFSHPLODModelPrimitiveType, Missin
 use std::io::{Read, Seek, SeekFrom};
 use std::fmt::{Display, Formatter, Result as FMTResult};
 use std::error::Error;
+use error::check_magic_number;
 
 pub struct BufferInfo {
     pub size: u32,
@@ -289,7 +290,7 @@ impl Importable for FMDLHeader {
         // Magic Number
         let mut magic_number: [u8; 4] = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        assert_eq!(magic_number, [b'F', b'M', b'D', b'L'], "Wrong magic number");
+        check_magic_number(magic_number, [b'F', b'M', b'D', b'L'])?;
         // File Name Offset
         let file_name_offset = Pointer::read_new_rel_i32_be(reader)?;
         // File Path Offset
@@ -354,7 +355,7 @@ impl Importable for FVTXHeader {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTXHeader, Box<Error>> {
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        assert_eq!(magic_number, [b'F', b'V', b'T', b'X'], "Wrong magic number");
+        check_magic_number(magic_number, [b'F', b'V', b'T', b'X'])?;
         let attribute_count = reader.read_to_u8()?;
         let buffer_info_count = reader.read_to_u8()?;
         let section_index = reader.read_be_to_u16()?;
@@ -461,7 +462,7 @@ impl Importable for FMATHeader {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FMATHeader, Box<Error>> {
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        assert_eq!(magic_number, [b'F', b'M', b'A', b'T'], "Wrong magic number");
+        check_magic_number(magic_number, [b'F', b'M', b'A', b'T'])?;
         let material_name_offset = Pointer::read_new_rel_i32_be(reader)?;
         let material_flags = reader.read_be_to_u32()?;
         let section_index = reader.read_be_to_u16()?;
@@ -527,7 +528,7 @@ impl Importable for FSKLHeader {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FSKLHeader, Box<Error>> {
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        assert_eq!(magic_number, [b'F', b'S', b'K', b'L'], "Wrong magic number");
+        check_magic_number(magic_number, [b'F', b'S', b'K', b'L'])?;
         let flags = reader.read_be_to_u32()?;
         let bone_array_count = reader.read_be_to_u16()?;
         let smooth_index_array_count = reader.read_be_to_u16()?;
@@ -568,7 +569,7 @@ impl Importable for FSHPHeader {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHPHeader, Box<Error>> {
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        assert_eq!(magic_number, [b'F', b'S', b'H', b'P'], "Wrong magic number");
+        check_magic_number(magic_number, [b'F', b'S', b'H', b'P'])?;
         let polygon_name_offset = Pointer::read_new_rel_i32_be(reader)?;
         let flags = reader.read_be_to_u32()?;
         let section_index = reader.read_be_to_u16()?;

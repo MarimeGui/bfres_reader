@@ -18,6 +18,7 @@ use fscn::FSCN;
 use embedded::Embedded;
 use util::Pointer;
 use util::align_on_4_bytes;
+use error::check_magic_number;
 
 pub struct FRES {
     pub header: FRESHeader,
@@ -77,7 +78,7 @@ impl Importable for FRESHeader {
         // Magic Number
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
-        assert_eq!(magic_number, [b'F', b'R', b'E', b'S'], "Wrong magic number");
+        check_magic_number(magic_number, [b'F', b'R', b'E', b'S'])?;
         // Version
         let version = FRESVersion::import(reader)?;
         // Byte Order Mark

@@ -1,6 +1,4 @@
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::fmt::Result;
+use std::fmt;
 use std::error::Error;
 
 #[derive(Debug)]
@@ -12,8 +10,8 @@ impl Error for RelativePointerDataInvalid {
     }
 }
 
-impl Display for RelativePointerDataInvalid {
-    fn fmt(&self, f: &mut Formatter) -> Result {
+impl fmt::Display for RelativePointerDataInvalid {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Yea error lol")
     }
 }
@@ -27,8 +25,8 @@ impl Error for MissingFVTXAttributeFormat {
     }
 }
 
-impl Display for MissingFVTXAttributeFormat {
-    fn fmt(&self, f: &mut Formatter) -> Result {
+impl fmt::Display for MissingFVTXAttributeFormat {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Yea error lol")
     }
 }
@@ -42,8 +40,8 @@ impl Error for MissingFSHPLODModelPrimitiveType {
     }
 }
 
-impl Display for MissingFSHPLODModelPrimitiveType {
-    fn fmt(&self, f: &mut Formatter) -> Result {
+impl fmt::Display for MissingFSHPLODModelPrimitiveType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Yea error lol")
     }
 }
@@ -57,8 +55,37 @@ impl Error for MissingFSHPLODModelIndexFormat {
     }
 }
 
-impl Display for MissingFSHPLODModelIndexFormat {
-    fn fmt(&self, f: &mut Formatter) -> Result {
+impl fmt::Display for MissingFSHPLODModelIndexFormat {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Yea error lol")
+    }
+}
+
+#[derive(Debug)]
+pub struct WrongMagicNumber<T: PartialEq + Sized> {
+    left: T,
+    right: T
+}
+
+impl <T: PartialEq + Sized + fmt::Debug> Error for WrongMagicNumber<T> {
+    fn description(&self) -> &str {
+        "A Magic Number check Failed"
+    }
+}
+
+impl <T: PartialEq + Sized + fmt::Debug> fmt::Display for WrongMagicNumber<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Incorrect Magic Number: {:?} != {:?}", self.left, self.right)
+    }
+}
+
+pub fn check_magic_number<T: PartialEq + Sized + fmt::Debug>(left: T, right: T) -> Result<(), WrongMagicNumber<T>> {
+    if left != right {
+        Err(WrongMagicNumber {
+            left,
+            right
+        })
+    } else {
+        Ok(())
     }
 }

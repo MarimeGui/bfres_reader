@@ -20,7 +20,7 @@ fn main() {
         let input_file_reader = File::open(&input_file).expect("Failed to open file for reading");
         let mut input_file_buf_reader = BufReader::new(input_file_reader);
         println!("Decompressing...");
-        let output = yaz0lib_rust::decompress(&mut input_file_buf_reader);
+        let output = yaz0lib_rust::decompress(&mut input_file_buf_reader).unwrap();
         println!("Decompressed !");
         let mut bfres_cursor: Cursor<Vec<u8>> = Cursor::new(output);
         let bfres_file = FRES::import(&mut bfres_cursor).unwrap();

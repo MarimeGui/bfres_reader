@@ -32,3 +32,33 @@ impl Display for MissingFVTXAttributeFormat {
         write!(f, "Yea error lol")
     }
 }
+
+#[derive(Debug)]
+pub struct MissingFSHPLODModelPrimitiveType;
+
+impl Error for MissingFSHPLODModelPrimitiveType {
+    fn description(&self) -> &str {
+        "A primitive type value was not recognized"
+    }
+}
+
+impl Display for MissingFSHPLODModelPrimitiveType {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "Yea error lol")
+    }
+}
+
+#[derive(Debug)]
+pub struct MissingFSHPLODModelIndexFormat;
+
+impl Error for MissingFSHPLODModelIndexFormat {
+    fn description(&self) -> &str {
+        "A index format value was not recognized"
+    }
+}
+
+impl Display for MissingFSHPLODModelIndexFormat {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "Yea error lol")
+    }
+}

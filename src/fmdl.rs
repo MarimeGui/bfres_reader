@@ -3,7 +3,7 @@ use IndexGroup;
 use DataArray;
 use Importable;
 use util::Pointer;
-use error::MissingFVTXAttributeFormat;
+use error::{MissingFVTXAttributeFormat, MissingFSHPLODModelPrimitiveType, MissingFSHPLODModelIndexFormat};
 use std::io::{Read, Seek, SeekFrom};
 use std::fmt::{Display, Formatter, Result as FMTResult};
 use std::error::Error;
@@ -197,13 +197,43 @@ pub struct FSHPHeader {
 }
 
 pub struct FSHPLODModel {
-    pub primitive_type: u32,
-    pub index_format: u32,
+    pub primitive_type: FSHPLODModelPrimitiveType,
+    pub index_format: FSHPLODModelIndexFormat,
     pub nb_points: u32,
     pub nb_visibility_groups: u16,
     pub visibility_group_offset: Pointer,
     pub buffer_info_offset: Pointer,
     pub skip_vertices: u32
+}
+
+pub enum FSHPLODModelPrimitiveType {
+    Points,
+    Lines,
+    LineStrip,
+    Triangles,
+    TriangleFan,
+    TriangleStrip,
+    LinesAdjacency,
+    LineStripAdjacency,
+    TrianglesAdjacency,
+    TriangleStripAdjacency,
+    Rectangles,
+    LineLoop,
+    Quads,
+    QuadStrip,
+    TessellateLines,
+    TessellateLineStrip,
+    TessellateTriangles,
+    TessellateTriangleStrip,
+    TessellateQuads,
+    TessellateQuadStrip
+}
+
+pub enum FSHPLODModelIndexFormat {
+    U16LittleEndian,
+    U32LittleEndian,
+    U16BigEndian,
+    U32BigEndian
 }
 
 pub struct FSHPVisibilityGroup {
@@ -604,8 +634,36 @@ impl Importable for FSHPHeader {
 
 impl Importable for FSHPLODModel {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHPLODModel, Box<Error>> {
-        let primitive_type = reader.read_be_to_u32()?;
-        let index_format = reader.read_be_to_u32()?;
+        let primitive_type = match reader.read_be_to_u32()? {
+            0x01 => FSHPLODModelPrimitiveType::Points,
+            0x02 => FSHPLODModelPrimitiveType::Lines,
+            0x03 => FSHPLODModelPrimitiveType::LineStrip,
+            0x04 => FSHPLODModelPrimitiveType::Triangles,
+            0x05 => FSHPLODModelPrimitiveType::TriangleFan,
+            0x06 => FSHPLODModelPrimitiveType::TriangleStrip,
+            0x0A => FSHPLODModelPrimitiveType::LinesAdjacency,
+            0x0B => FSHPLODModelPrimitiveType::LineStripAdjacency,
+            0x0C => FSHPLODModelPrimitiveType::TrianglesAdjacency,
+            0x0D => FSHPLODModelPrimitiveType::TriangleStripAdjacency,
+            0x11 => FSHPLODModelPrimitiveType::Rectangles,
+            0x12 => FSHPLODModelPrimitiveType::LineLoop,
+            0x13 => FSHPLODModelPrimitiveType::Quads,
+            0x14 => FSHPLODModelPrimitiveType::QuadStrip,
+            0x82 => FSHPLODModelPrimitiveType::TessellateLines,
+            0x83 => FSHPLODModelPrimitiveType::TessellateLineStrip,
+            0x84 => FSHPLODModelPrimitiveType::TessellateTriangles,
+            0x86 => FSHPLODModelPrimitiveType::TessellateTriangleStrip,
+            0x93 => FSHPLODModelPrimitiveType::TessellateQuads,
+            0x94 => FSHPLODModelPrimitiveType::TessellateQuadStrip,
+            _ => return Err(Box::new(MissingFSHPLODModelPrimitiveType {}))
+        };
+        let index_format = match reader.read_be_to_u32()? {
+            0 => FSHPLODModelIndexFormat::U16LittleEndian,
+            1 => FSHPLODModelIndexFormat::U32LittleEndian,
+            4 => FSHPLODModelIndexFormat::U16BigEndian,
+            9 => FSHPLODModelIndexFormat::U32BigEndian,
+            _ => return Err(Box::new(MissingFSHPLODModelIndexFormat {}))
+        };
         let nb_points = reader.read_be_to_u32()?;
         let nb_visibility_groups = reader.read_be_to_u16()?;
         reader.seek(SeekFrom::Current(2))?;

@@ -1,11 +1,12 @@
 [package]
 name = "bfres_reader"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["guillaume"]
 
 [lib]
 name = "bfres"
 
 [dependencies]
+half = "1.0.2"
 yaz0lib_rust = { git = "https://github.com/MarimeGui/yaz0lib_rust" }
 ez_io = { git = "https://github.com/MarimeGui/ez_io" }

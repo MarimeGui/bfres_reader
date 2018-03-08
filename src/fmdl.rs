@@ -8,6 +8,13 @@ use std::io::{Read, Seek, SeekFrom};
 use std::fmt::{Display, Formatter, Result as FMTResult};
 use std::error::Error;
 
+pub struct BufferInfo {
+    pub size: u32,
+    pub stride: u16,
+    pub buffering_count: u16,
+    pub data_offset: Pointer
+}
+
 pub struct FMDL {
     pub header: FMDLHeader,
     pub fvtx_array: DataArray<FVTX>,
@@ -35,7 +42,7 @@ pub struct FMDLHeader {
 pub struct FVTX {
     pub header: FVTXHeader,
     pub attributes_index_group: IndexGroup<FVTXAttributes>,
-    pub buffer_info_array: DataArray<FVTXBufferInfo>
+    pub buffer_info_array: DataArray<BufferInfo>
 }
 
 pub struct FVTXHeader {
@@ -79,16 +86,6 @@ pub enum FVTXAttributesFormats {
     FourF16ToFourF32,
     ThreeF32,
     FourF32
-}
-
-pub struct FVTXBufferInfo {
-    pub data_pointer: u32,
-    pub size: u32,
-    pub handle: u32,
-    pub stride: u16,
-    pub buffering_count: u16,
-    pub context_pointer: u32,
-    pub data_offset: Pointer
 }
 
 pub struct FMAT {
@@ -241,18 +238,29 @@ pub struct FSHPVisibilityGroup {
     pub nb_points: u32
 }
 
-pub struct FSHPBufferInfo {
-    pub data_pointer: u32,
-    pub size: u32,
-    pub handle: u32,
-    pub stride: u16,
-    pub buffering_count: u16,
-    pub context_pointer: u32,
-    pub data_offset: Pointer
-}
-
 pub struct FSHPVisibilityGroupTree {
 
+}
+
+impl Importable for BufferInfo {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<BufferInfo, Box<Error>> {
+        let data_pointer = reader.read_be_to_u32()?;
+        assert_eq!(data_pointer, 0, "Data pointer is always 0 in files");
+        let size = reader.read_be_to_u32()?;
+        let handle = reader.read_be_to_u32()?;
+        assert_eq!(handle, 0, "Handle is always 0 in files");
+        let stride = reader.read_be_to_u16()?;
+        let buffering_count = reader.read_be_to_u16()?;
+        let context_pointer = reader.read_be_to_u32()?;
+        assert_eq!(context_pointer, 0, "Context pointer is always 0 in files");
+        let data_offset = Pointer::read_new_rel_i32_be(reader)?;
+        Ok(BufferInfo {
+            size,
+            stride,
+            buffering_count,
+            data_offset
+        })
+    }
 }
 
 impl Importable for FMDL {
@@ -437,30 +445,6 @@ impl Display for FVTXAttributesFormats {
             FVTXAttributesFormats::FourF32 => "Four f32",
         };
         write!(f, "{}", text)
-    }
-}
-
-impl Importable for FVTXBufferInfo {
-    fn import<R: Read + Seek>(reader: &mut R) -> Result<FVTXBufferInfo, Box<Error>> {
-        let data_pointer = reader.read_be_to_u32()?;
-        assert_eq!(data_pointer, 0, "Data pointer is always 0 in files");
-        let size = reader.read_be_to_u32()?;
-        let handle = reader.read_be_to_u32()?;
-        assert_eq!(handle, 0, "Handle is always 0 in files");
-        let stride = reader.read_be_to_u16()?;
-        let buffering_count = reader.read_be_to_u16()?;
-        let context_pointer = reader.read_be_to_u32()?;
-        assert_eq!(context_pointer, 0, "Context pointer is always 0 in files");
-        let data_offset = Pointer::read_new_rel_i32_be(reader)?;
-        Ok(FVTXBufferInfo {
-            data_pointer,
-            size,
-            handle,
-            stride,
-            buffering_count,
-            context_pointer,
-            data_offset
-        })
     }
 }
 
@@ -688,9 +672,9 @@ impl FSHPLODModel {
         let array = DataArray::new(reader, 0x18, u32::from(self.nb_visibility_groups))?;
         Ok(array)
     }
-    pub fn get_direct_buffer_info<R: Read + Seek>(&self, reader: &mut R) -> Result<FSHPBufferInfo, Box<Error>> {
+    pub fn get_direct_buffer_info<R: Read + Seek>(&self, reader: &mut R) -> Result<BufferInfo, Box<Error>> {
         self.buffer_info_offset.seek_abs_pos(reader)?;
-        let info = FSHPBufferInfo::import(reader)?;
+        let info = BufferInfo::import(reader)?;
         Ok(info)
     }
 }
@@ -707,33 +691,9 @@ impl Importable for FSHPVisibilityGroup {
 }
 
 impl FSHPVisibilityGroup {
-    pub fn get_index_buffer<R: Read + Seek>(&self, reader: &mut R) -> Result<FSHPBufferInfo, Box<Error>> {
+    pub fn get_index_buffer<R: Read + Seek>(&self, reader: &mut R) -> Result<BufferInfo, Box<Error>> {
         self.buffer_info_offset.seek_abs_pos(reader)?;
-        let buffer_info = FSHPBufferInfo::import(reader)?;
+        let buffer_info = BufferInfo::import(reader)?;
         Ok(buffer_info)
-    }
-}
-
-impl Importable for FSHPBufferInfo {
-    fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHPBufferInfo, Box<Error>> {
-        let data_pointer = reader.read_be_to_u32()?;
-        assert_eq!(data_pointer, 0, "Data pointer is always 0 in files");
-        let size = reader.read_be_to_u32()?;
-        let handle = reader.read_be_to_u32()?;
-        assert_eq!(handle, 0, "Handle is always 0 in files");
-        let stride = reader.read_be_to_u16()?;
-        let buffering_count = reader.read_be_to_u16()?;
-        let context_pointer = reader.read_be_to_u32()?;
-        assert_eq!(context_pointer, 0, "Context pointer is always 0 in files");
-        let data_offset = Pointer::read_new_rel_i32_be(reader)?;
-        Ok(FSHPBufferInfo {
-            data_pointer,
-            size,
-            handle,
-            stride,
-            buffering_count,
-            context_pointer,
-            data_offset
-        })
     }
 }

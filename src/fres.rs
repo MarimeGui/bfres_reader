@@ -3,6 +3,7 @@ use std::error::Error;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
+use std::fmt::{Display, Formatter, Result as FMTResult};
 use std::collections::HashMap;
 use IndexGroup;
 use Importable;
@@ -25,7 +26,7 @@ pub struct FRES {
 }
 
 pub struct FRESHeader {
-    pub version: [u8; 4],
+    pub version: FRESVersion,
     pub file_length: u32,
     pub file_alignment: u32,
     pub file_name_offset: Pointer,
@@ -33,6 +34,10 @@ pub struct FRESHeader {
     pub string_table_offset: Pointer,
     pub sub_file_index_groups_offsets: [Option<Pointer>; 12],
     pub sub_file_index_groups_entry_counts: [u16; 12],
+}
+
+pub struct FRESVersion {
+    pub numbers: [u8; 4]
 }
 
 pub struct StringTable {
@@ -74,8 +79,7 @@ impl Importable for FRESHeader {
         reader.read_exact(&mut magic_number)?;
         assert_eq!(magic_number, [b'F', b'R', b'E', b'S'], "Wrong magic number");
         // Version
-        let mut version = [0u8; 4];
-        reader.read_exact(&mut version)?;
+        let version = FRESVersion::import(reader)?;
         // Byte Order Mark
         let bom = reader.read_be_to_u16()?;
         assert_eq!(bom, 0xFEFF, "This file is not in Big Endian, Little Endian not supported");
@@ -128,6 +132,22 @@ impl FRESHeader {
             grand_total += count;
         }
         grand_total
+    }
+}
+
+impl Importable for FRESVersion {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FRESVersion, Box<Error>> {
+        let mut numbers = [0u8; 4];
+        reader.read_exact(&mut numbers)?;
+        Ok(FRESVersion {
+            numbers
+        })
+    }
+}
+
+impl Display for FRESVersion {
+    fn fmt(&self, f: &mut Formatter) -> FMTResult {
+        write!(f, "v{}.{}.{}.{}", self.numbers[0], self.numbers[1], self.numbers[2], self.numbers[3])
     }
 }
 

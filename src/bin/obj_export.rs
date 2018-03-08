@@ -28,18 +28,16 @@ struct OBJGroup {
 impl OBJFile {
     fn export(&self, file: &mut File) -> Result<(), Box<Error>> {
         let mut offset: u16 = 0;
-        let mut next_offset: u16 = 0;
         for group in &self.groups {
             file.write_all(&format!("o {}\n", group.name).into_bytes())?;
             for vertex_position in &group.vertices_positions {
                 file.write_all(&format!("v {} {} {}\n",  vertex_position[0], vertex_position[1], vertex_position[2]).into_bytes())?;
             }
-            next_offset = group.vertices_positions.len() as u16;
             file.write_all(&"s 1\n".to_string().into_bytes())?;
             for face in &group.faces {
                 file.write_all(&format!("f {} {} {}\n", face[0] + 1 + offset, face[1] + 1 + offset, face[2] + 1 + offset).into_bytes())?;
             }
-            offset += next_offset;
+            offset += group.vertices_positions.len() as u16;
         }
         Ok(())
     }

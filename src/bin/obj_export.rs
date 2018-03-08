@@ -15,6 +15,36 @@ use std::mem::transmute;
 use std::fs::File;
 use std::path::Path;
 
+struct OBJFile {
+    groups: Vec<OBJGroup>
+}
+
+struct OBJGroup {
+    vertices_positions: Vec<[f32; 3]>,
+    faces: Vec<[u16; 3]>,
+    name: String
+}
+
+impl OBJFile {
+    fn export(&self, file: &mut File) -> Result<(), Box<Error>> {
+        let mut offset: u16 = 0;
+        let mut next_offset: u16 = 0;
+        for group in &self.groups {
+            file.write_all(&format!("o {}\n", group.name).into_bytes())?;
+            for vertex_position in &group.vertices_positions {
+                file.write_all(&format!("v {} {} {}\n",  vertex_position[0], vertex_position[1], vertex_position[2]).into_bytes())?;
+            }
+            next_offset = group.vertices_positions.len() as u16;
+            file.write_all(&"s 1\n".to_string().into_bytes())?;
+            for face in &group.faces {
+                file.write_all(&format!("f {} {} {}\n", face[0] + 1 + offset, face[1] + 1 + offset, face[2] + 1 + offset).into_bytes())?;
+            }
+            offset += next_offset;
+        }
+        Ok(())
+    }
+}
+
 trait FloatRead: Read {
     fn read_f16_to_f32(&mut self) -> Result<f32, Box<Error>> {
         let mut temp: [u8; 2] = [0; 2];
@@ -66,6 +96,14 @@ fn main() {
             for model_entry in model_data_index_group.entries {
                 // Load the FMDL
                 let fmdl = model_entry.get_data(bfres_cursor_ref).expect("Failed to read FMDL Sub-File");
+
+                // Get the FMDL name
+                let fmdl_name = model_entry.get_name(bfres_cursor_ref).unwrap();
+
+                // Crate a new instance of OBJFile for this model
+                let mut obj_file = OBJFile {
+                    groups: Vec::new()
+                };
 
                 // Create the vector that will store the vertices positions for all the FVTXes
                 let mut vertices_positions_groups = Vec::with_capacity(fmdl.fvtx_array.entries.len());
@@ -180,18 +218,23 @@ fn main() {
 
                     println!("        {} new faces", faces.len());
 
-                    // Export the OBJ
-                    let mut obj_file = File::create(format!("{}/{}.obj", output_folder, fshp_name)).unwrap();
-                    for vertex_position in vertices_positions {
-                        let text: String = format!("v {} {} {}\n", vertex_position[0], vertex_position[1], vertex_position[2]);
-                        obj_file.write_all(&text.into_bytes()).unwrap();
-                    }
-                    for face in &faces {
-                        let text: String = format!("f {} {} {}\n", face[0] + 1, face[1] + 1, face[2] + 1);
-                        obj_file.write_all(&text.into_bytes()).unwrap();
-                    }
+                    // Add a new OBJGroup for this model
+                    let obj_group = OBJGroup {
+                        vertices_positions: vertices_positions.clone(),
+                        faces,
+                        name: fshp_name
+                    };
+
+                    // Add the new OBJGroup to OBJFile
+                    obj_file.groups.push(obj_group);
+
                 }
 
+                // Create the output File object
+                let mut obj_file_writer = File::create(format!("{}/{}.obj", output_folder, fmdl_name)).unwrap();
+
+                // Export the OBJ file
+                obj_file.export(&mut obj_file_writer).unwrap();
             }
 
         } else {

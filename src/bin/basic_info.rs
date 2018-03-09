@@ -95,6 +95,8 @@ fn main() {
                 println!("--- {} @ 0x{:x}", ftex_entry.get_name(&mut bfres_cursor).unwrap(), ftex_entry.data_pointer.get_abs_pos().unwrap());
                 let ftex = ftex_entry.get_data(&mut bfres_cursor).unwrap();
                 println!("    Resolution: {} x {}", ftex.header.texture_width, ftex.header.texture_height);
+                println!("    Dimension: {}", ftex.header.dimension);
+                println!("    Tile Mode: {}", ftex.header.tile_mode);
                 if count > 9 {
                     break
                 }

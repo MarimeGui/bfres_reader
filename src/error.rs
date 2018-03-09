@@ -89,3 +89,37 @@ pub fn check_magic_number<T: PartialEq + Sized + fmt::Debug>(left: T, right: T) 
         Ok(())
     }
 }
+
+#[derive(Debug)]
+pub struct UnrecognizedFTEXDimension {
+    pub value: u32
+}
+
+impl Error for UnrecognizedFTEXDimension {
+    fn description(&self) -> &str {
+        "The read value did not match anything"
+    }
+}
+
+impl fmt::Display for UnrecognizedFTEXDimension {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Unrecognized value: 0x{:x}", self.value)
+    }
+}
+
+#[derive(Debug)]
+pub struct UnrecognizedFTEXTileMode {
+    pub value: u32
+}
+
+impl Error for UnrecognizedFTEXTileMode {
+    fn description(&self) -> &str {
+        "The read value did not match anything"
+    }
+}
+
+impl fmt::Display for UnrecognizedFTEXTileMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Unrecognized value: 0x{:x}", self.value)
+    }
+}

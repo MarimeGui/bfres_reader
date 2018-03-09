@@ -141,6 +141,9 @@ fn main() {
                         // Seek to the location of the buffer
                         buffer.data_offset.seek_abs_pos(bfres_cursor_ref).expect("Failed to seek to a FVTX Buffer");
 
+                        // Align to the data we want to read
+                        bfres_cursor_ref.seek(SeekFrom::Current(i64::from(attributes.buffer_offset))).expect("Failed to seek");
+
                         // Read the position of the vertex differently depending on data types
                         match attributes.format {
                             FVTXAttributesFormats::ThreeF32 => {

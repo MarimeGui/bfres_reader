@@ -18,7 +18,7 @@ pub struct FTEXHeader {
     pub nb_mipmaps: u32,
     pub texture_format: u32,
     pub aa_mode: FTEXAAMode,
-    pub usage: u32,
+    pub usage: FTEXUsage,
     pub data_length: u32,
     pub mipmaps_data_length: u32,
     pub tile_mode: FTEXTileMode,
@@ -55,6 +55,14 @@ pub enum FTEXAAMode {
     TwoTimes,
     FourTimes,
     EightTimes
+}
+
+pub struct FTEXUsage {
+    texture: bool,
+    color_buffer: bool,
+    depth_buffer: bool,
+    scan_buffer: bool,
+    ftv: bool
 }
 
 pub enum FTEXTileMode {
@@ -98,7 +106,7 @@ impl Importable for FTEXHeader {
         let nb_mipmaps = reader.read_be_to_u32()?;
         let texture_format = reader.read_be_to_u32()?;
         let aa_mode = FTEXAAMode::import(reader)?;
-        let usage = reader.read_be_to_u32()?;
+        let usage = FTEXUsage::import(reader)?;
         let data_length = reader.read_be_to_u32()?;
         let data_pointer = reader.read_be_to_u32()?;
         assert_eq!(data_pointer, 0, "Data pointer is always 0 in files");
@@ -219,6 +227,48 @@ impl fmt::Display for FTEXAAMode {
             FTEXAAMode::FourTimes  => "4x",
             FTEXAAMode::EightTimes => "8x"
         })
+    }
+}
+
+impl Importable for FTEXUsage {
+    fn import<R: Read +  Seek>(reader: &mut R) -> Result<FTEXUsage, Box<Error>> {
+        let value = reader.read_be_to_u32()?;
+        let texture = value & 1 == 1;
+        let color_buffer = value & 2 == 2;
+        let depth_buffer = value & 4 == 4;
+        let scan_buffer = value & 8 == 8;
+        let ftv = value & (1<<31) == (1<<31);
+        Ok(FTEXUsage {
+            texture,
+            color_buffer,
+            depth_buffer,
+            scan_buffer,
+            ftv
+        })
+    }
+}
+
+impl fmt::Display for FTEXUsage {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut text = "".to_string();
+        if self.texture {
+            text += "Texture, ";
+        };
+        if self.color_buffer {
+            text += "Color Buffer, ";
+        };
+        if self.depth_buffer {
+            text += "Depth Buffer, ";
+        };
+        if self.scan_buffer {
+            text += "Scan Buffer, ";
+        };
+        if self.ftv {
+            text += "Final TV, ";
+        };
+        text.pop();
+        text.pop();
+        write!(f, "{}", text)
     }
 }
 

@@ -97,6 +97,7 @@ fn main() {
                 println!("    Resolution: {} x {}", ftex.header.texture_width, ftex.header.texture_height);
                 println!("    Dimension: {}", ftex.header.dimension);
                 println!("    AA Mode: {}", ftex.header.aa_mode);
+                println!("    Usage: {}", ftex.header.usage);
                 println!("    Tile Mode: {}", ftex.header.tile_mode);
                 if count > 9 {
                     break

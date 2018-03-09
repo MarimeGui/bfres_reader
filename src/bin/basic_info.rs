@@ -99,6 +99,7 @@ fn main() {
                 println!("    AA Mode: {}", ftex.header.aa_mode);
                 println!("    Usage: {}", ftex.header.usage);
                 println!("    Tile Mode: {}", ftex.header.tile_mode);
+                println!("    Component Selector: {}", ftex.header.component_selector);
                 if count > 9 {
                     break
                 }

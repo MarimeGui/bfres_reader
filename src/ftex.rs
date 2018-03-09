@@ -4,7 +4,7 @@ use std::io::{Read, Seek};
 use std::fmt;
 use Importable;
 use util::Pointer;
-use error::{check_magic_number, UnrecognizedFTEXDimension, UnrecognizedFTEXTileMode, UnrecognizedFTEXAAMode};
+use error::{check_magic_number, UnrecognizedFTEXDimension, UnrecognizedFTEXTileMode, UnrecognizedFTEXAAMode, UnrecognizedFTEXComponentSelectorChannel};
 
 pub struct FTEX {
     pub header: FTEXHeader
@@ -28,7 +28,7 @@ pub struct FTEXHeader {
     pub mipmap_offsets: [u32; 13],
     pub first_mipmap: u32,
     pub nb_slices: u32,
-    pub component_selector: [u8; 4],
+    pub component_selector: FTEXComponentSelector,
     pub texture_registers: [u32; 5],
     pub array_length: u32,
     pub file_name_offset: Pointer,
@@ -85,6 +85,19 @@ pub enum FTEXTileMode {
     ThreeBTiledThick
 }
 
+pub struct FTEXComponentSelector {
+    composition: [FTEXComponentSelectorChannel; 4]
+}
+
+pub enum FTEXComponentSelectorChannel {
+    Red,
+    Green,
+    Blue,
+    Alpha,
+    Zero,
+    One
+}
+
 impl Importable for FTEX {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FTEX, Box<Error>> {
         let header = FTEXHeader::import(reader)?;
@@ -127,8 +140,7 @@ impl Importable for FTEXHeader {
         let first_slice = reader.read_be_to_u32()?;
         assert_eq!(first_slice, 0, "First slice is always 0");
         let nb_slices = reader.read_be_to_u32()?;
-        let mut component_selector: [u8; 4] = [0u8; 4];
-        reader.read_exact(&mut component_selector)?;
+        let component_selector = FTEXComponentSelector::import(reader)?;
         let mut texture_registers: [u32; 5] = [0u32; 5];
         for data in &mut texture_registers {
             *data = reader.read_be_to_u32()?;
@@ -320,5 +332,52 @@ impl fmt::Display for FTEXTileMode {
             FTEXTileMode::ThreeBTiledThick => "Three B Tiled Thick",
         };
         write!(f, "{}", text)
+    }
+}
+
+impl Importable for FTEXComponentSelector {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FTEXComponentSelector, Box<Error>> {
+        Ok(FTEXComponentSelector {
+            composition: [
+                FTEXComponentSelectorChannel::import(reader)?,
+                FTEXComponentSelectorChannel::import(reader)?,
+                FTEXComponentSelectorChannel::import(reader)?,
+                FTEXComponentSelectorChannel::import(reader)?
+            ]
+        })
+    }
+}
+
+impl fmt::Display for FTEXComponentSelector {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}, {}, {}, {}", self.composition[0], self.composition[1], self.composition[2], self.composition[3])
+    }
+}
+
+impl Importable for FTEXComponentSelectorChannel {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FTEXComponentSelectorChannel, Box<Error>> {
+        let byte = reader.read_to_u8()?;
+        Ok(match byte {
+            0 => FTEXComponentSelectorChannel::Red,
+            1 => FTEXComponentSelectorChannel::Green,
+            2 => FTEXComponentSelectorChannel::Blue,
+            3 => FTEXComponentSelectorChannel::Alpha,
+            4 => FTEXComponentSelectorChannel::Zero,
+            5 => FTEXComponentSelectorChannel::One,
+            _ => return Err(Box::new(UnrecognizedFTEXComponentSelectorChannel {value: byte}))
+        })
+    }
+}
+
+impl fmt::Display for FTEXComponentSelectorChannel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match *self {
+            FTEXComponentSelectorChannel::Red => "Red",
+            FTEXComponentSelectorChannel::Green => "Green",
+            FTEXComponentSelectorChannel::Blue => "Blue",
+            FTEXComponentSelectorChannel::Alpha => "Alpha",
+            FTEXComponentSelectorChannel::Zero => "Always 0",
+            FTEXComponentSelectorChannel::One => "Always 1"
+        })
     }
 }

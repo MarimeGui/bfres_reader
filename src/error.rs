@@ -140,3 +140,20 @@ impl fmt::Display for UnrecognizedFTEXAAMode {
         write!(f, "Unrecognized value: 0x{:x}", self.value)
     }
 }
+
+#[derive(Debug)]
+pub struct UnrecognizedFTEXComponentSelectorChannel {
+    pub value: u8
+}
+
+impl Error for UnrecognizedFTEXComponentSelectorChannel {
+    fn description(&self) -> &str {
+        "The read value did not match anything"
+    }
+}
+
+impl fmt::Display for UnrecognizedFTEXComponentSelectorChannel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Unrecognized value: {}", self.value)
+    }
+}

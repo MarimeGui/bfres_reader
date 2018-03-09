@@ -4,7 +4,7 @@ use std::io::{Read, Seek};
 use std::fmt;
 use Importable;
 use util::Pointer;
-use error::{check_magic_number, UnrecognizedFTEXDimension, UnrecognizedFTEXTileMode};
+use error::{check_magic_number, UnrecognizedFTEXDimension, UnrecognizedFTEXTileMode, UnrecognizedFTEXAAMode};
 
 pub struct FTEX {
     pub header: FTEXHeader
@@ -17,7 +17,7 @@ pub struct FTEXHeader {
     pub texture_depth: u32,
     pub nb_mipmaps: u32,
     pub texture_format: u32,
-    pub aa_mode: u32,
+    pub aa_mode: FTEXAAMode,
     pub usage: u32,
     pub data_length: u32,
     pub mipmaps_data_length: u32,
@@ -48,6 +48,13 @@ pub enum FTEXDimension {
     TwoDArray,
     TwoDMSAA,
     TwoDMSAAArray
+}
+
+pub enum FTEXAAMode {
+    OneTime,
+    TwoTimes,
+    FourTimes,
+    EightTimes
 }
 
 pub enum FTEXTileMode {
@@ -90,7 +97,7 @@ impl Importable for FTEXHeader {
         let texture_depth = reader.read_be_to_u32()?;
         let nb_mipmaps = reader.read_be_to_u32()?;
         let texture_format = reader.read_be_to_u32()?;
-        let aa_mode = reader.read_be_to_u32()?;
+        let aa_mode = FTEXAAMode::import(reader)?;
         let usage = reader.read_be_to_u32()?;
         let data_length = reader.read_be_to_u32()?;
         let data_pointer = reader.read_be_to_u32()?;
@@ -188,6 +195,30 @@ impl fmt::Display for FTEXDimension {
             FTEXDimension::TwoDMSAAArray => "2D MSAA Array",
         };
         write!(f, "{}", text)
+    }
+}
+
+impl Importable for FTEXAAMode {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<FTEXAAMode, Box<Error>> {
+        let value = reader.read_be_to_u32()?;
+        Ok(match value {
+            0 => FTEXAAMode::OneTime,
+            1 => FTEXAAMode::TwoTimes,
+            2 => FTEXAAMode::FourTimes,
+            3 => FTEXAAMode::EightTimes,
+            _ => return Err(Box::new(UnrecognizedFTEXAAMode {value}))
+        })
+    }
+}
+
+impl fmt::Display for FTEXAAMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match *self {
+            FTEXAAMode::OneTime    => "1x",
+            FTEXAAMode::TwoTimes   => "2x",
+            FTEXAAMode::FourTimes  => "4x",
+            FTEXAAMode::EightTimes => "8x"
+        })
     }
 }
 

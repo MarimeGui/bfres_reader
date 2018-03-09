@@ -123,3 +123,20 @@ impl fmt::Display for UnrecognizedFTEXTileMode {
         write!(f, "Unrecognized value: 0x{:x}", self.value)
     }
 }
+
+#[derive(Debug)]
+pub struct UnrecognizedFTEXAAMode {
+    pub value: u32
+}
+
+impl Error for UnrecognizedFTEXAAMode {
+    fn description(&self) -> &str {
+        "The read value did not match anything"
+    }
+}
+
+impl fmt::Display for UnrecognizedFTEXAAMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Unrecognized value: 0x{:x}", self.value)
+    }
+}

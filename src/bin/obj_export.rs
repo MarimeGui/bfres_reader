@@ -68,25 +68,25 @@ trait FloatRead: Read {
 
     fn read_3i10_to_3f32(&mut self) -> Result<[f32; 3], Box<Error>> {
         let value = self.read_be_to_u32()?;
-        let mut value1 = ((value & 0b00111111111100000000000000000000u32) >> 20) as u16;
-        let mut value2 = ((value & 0b00000000000011111111110000000000u32) >> 10) as u16;
-        let mut value3 = ( value & 0b00000000000000000000001111111111u32) as u16;
-        if value & 0b00100000000000000000000000000000u32 == 0b00100000000000000000000000000000u32 {  // If Value 1 is negative
-            value1 += 0b1111110000000000u16;
+        let mut value1 = ((value & 0b0011_1111_1111_0000_0000_0000_0000_0000u32) >> 20) as u16;
+        let mut value2 = ((value & 0b0000_0000_0000_1111_1111_1100_0000_0000u32) >> 10) as u16;
+        let mut value3 = ( value & 0b0000_0000_0000_0000_0000_0011_1111_1111u32) as u16;
+        if value & 0b0010_0000_0000_0000_0000_0000_0000_0000u32 == 0b0010_0000_0000_0000_0000_0000_0000_0000u32 {  // If Value 1 is negative
+            value1 += 0b1111_1100_0000_0000u16;
         }
         let value1_int: i16 = unsafe {
             transmute(value1)
         };
-        let value1_float = f32::from(value1_int) / 32768f32;
-        if value & 0b00000000000010000000000000000000u32 == 0b00000000000010000000000000000000u32 {  // If Value 2 is negative
-            value2 += 0b1111110000000000u16;
+        let value1_float = f32::from(value1_int) / 32_768f32;
+        if value & 0b0000_0000_0000_1000_0000_0000_0000_0000u32 == 0b0000_0000_0000_1000_0000_0000_0000_0000u32 {  // If Value 2 is negative
+            value2 += 0b1111_1100_0000_0000u16;
         }
         let value2_int: i16 = unsafe {
             transmute(value2)
         };
-        let value2_float = f32::from(value2_int) / 32768f32;
-        if value & 0b00000000000000000000001000000000u32 == 0b00000000000000000000001000000000u32 {  // If Value 3 is negative
-            value3 += 0b1111110000000000u16;
+        let value2_float = f32::from(value2_int) / 32_768f32;
+        if value & 0b0000_0000_0000_0000_0000_0010_0000_0000u32 == 0b0000_0000_0000_0000_0000_0010_0000_0000u32 {  // If Value 3 is negative
+            value3 += 0b1111_1100_0000_0000u16;
         }
         let value3_int: i16 = unsafe {
             transmute(value3)
@@ -109,9 +109,8 @@ fn main() {
         // Input the data
         let input_file = args[1].to_string();
         let output_folder = args[2].to_string();
-        let mut input_file_reader = BufReader::new(File::open(&input_file).expect("Failed to open file for reading"));
+        let mut input_file_buf_reader = BufReader::new(File::open(&input_file).expect("Failed to open file for reading"));
         // Get the first Magic Number to check for compression
-        let mut input_file_buf_reader = BufReader::new(input_file_reader);
         let mut yaz_check_buffer = [0u8; 4];
         input_file_buf_reader.read_exact(&mut yaz_check_buffer).expect("Failed to read first Magic Number");
         input_file_buf_reader.seek(SeekFrom::Start(0)).expect("Failed to re-seek to beginning of the file");
@@ -157,14 +156,14 @@ fn main() {
 
                     // Go through all the attributes
                     for attributes_entry in fvtx.attributes_index_group.entries {
-                        fn read_buffer_two<R: Read + Seek>(fmt: FVTXAttributesFormats, stride: u16, buffer_end: u64, reader: &mut R) -> Result<Vec<[f32; 2]>, Box<Error>> {
+                        fn read_buffer_two<R: Read + Seek>(fmt: &FVTXAttributesFormats, stride: u16, buffer_end: u64, reader: &mut R) -> Result<Vec<[f32; 2]>, Box<Error>> {
                             let mut vertices_data = Vec::new();
 
-                            match fmt {
+                            match *fmt {
                                 FVTXAttributesFormats::TwoU16ToTwoF32 => {
                                     let to_skip = i64::from(stride - 4);
                                     while reader.seek(SeekFrom::Current(0)).unwrap() < buffer_end {
-                                        vertices_data.push([f32::from(reader.read_be_to_u16().unwrap()) / 65536f32, f32::from(reader.read_be_to_u16().unwrap()) / 65536f32]);
+                                        vertices_data.push([f32::from(reader.read_be_to_u16().unwrap()) / 65_536f32, f32::from(reader.read_be_to_u16().unwrap()) / 65_536f32]);
                                         reader.seek(SeekFrom::Current(to_skip)).unwrap();
                                     }
                                 },
@@ -185,7 +184,7 @@ fn main() {
                                 FVTXAttributesFormats::TwoI16ToTwoF32 => {
                                     let to_skip = i64::from(stride - 4);
                                     while reader.seek(SeekFrom::Current(0)).unwrap() < buffer_end {
-                                        vertices_data.push([f32::from(reader.read_be_to_i16()?) / 32767f32, f32::from(reader.read_be_to_i16()?) / 32767f32]);
+                                        vertices_data.push([f32::from(reader.read_be_to_i16()?) / 32_767f32, f32::from(reader.read_be_to_i16()?) / 32_767f32]);
                                         reader.seek(SeekFrom::Current(to_skip)).unwrap();
                                     }
                                 },
@@ -197,12 +196,12 @@ fn main() {
                         }
 
                         // Define a function for reading the buffer
-                        fn read_buffer_three<R: Read + Seek>(fmt: FVTXAttributesFormats, stride: u16, buffer_end: u64, reader: &mut R) -> Result<Vec<[f32; 3]>, Box<Error>> {
+                        fn read_buffer_three<R: Read + Seek>(fmt: &FVTXAttributesFormats, stride: u16, buffer_end: u64, reader: &mut R) -> Result<Vec<[f32; 3]>, Box<Error>> {
                             // Create the vector that will hold the new data
                             let mut vertices_data = Vec::new();
 
                             // Read the position of the vertex differently depending on data types
-                            match fmt {
+                            match *fmt {
                                 FVTXAttributesFormats::ThreeF32 => {
                                     let to_skip = i64::from(stride - 12);
                                     while reader.seek(SeekFrom::Current(0)).unwrap() < buffer_end {
@@ -259,7 +258,7 @@ fn main() {
                         match attribute_name.as_ref() {
                             "_p0" => {
                                 // Read the buffer
-                                let vertices_positions = read_buffer_three(attributes.format, buffer.stride, buffer_end, bfres_cursor_ref).unwrap();
+                                let vertices_positions = read_buffer_three(&attributes.format, buffer.stride, buffer_end, bfres_cursor_ref).unwrap();
 
                                 // Push the retrieved positions of vertices to the main group
                                 println!("        {} new vertices positions", vertices_positions.len());
@@ -268,7 +267,7 @@ fn main() {
                             },
                             "_u0" => {
                                 // Create the vector that stores the texture_coordinates
-                                let vertices_texture_coordinates = read_buffer_two(attributes.format, buffer.stride, buffer_end, bfres_cursor_ref).unwrap();
+                                let vertices_texture_coordinates = read_buffer_two(&attributes.format, buffer.stride, buffer_end, bfres_cursor_ref).unwrap();
 
                                 // Push the new texture_coordinates to the main group
                                 println!("        {} new vertices texture_coordinates", vertices_texture_coordinates.len());

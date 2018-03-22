@@ -4,7 +4,7 @@ extern crate yaz0lib_rust;
 use bfres::fres::FRES;
 use bfres::Importable;
 use std::env;
-use std::io::{BufReader, Cursor};
+use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::fs::File;
 use std::path::Path;
 
@@ -19,10 +19,16 @@ fn main() {
         let input_file = args[1].to_string();
         let input_file_reader = File::open(&input_file).expect("Failed to open file for reading");
         let mut input_file_buf_reader = BufReader::new(input_file_reader);
-        println!("Decompressing...");
-        let output = yaz0lib_rust::decompress(&mut input_file_buf_reader).unwrap();
-        println!("Decompressed !");
-        let mut bfres_cursor: Cursor<Vec<u8>> = Cursor::new(output);
+        let mut yaz_check_buffer = [0u8; 4];
+        input_file_buf_reader.read_exact(&mut yaz_check_buffer).expect("Failed to read first Magic Number");
+        input_file_buf_reader.seek(SeekFrom::Start(0)).expect("Failed to re-seek to beginning of the file");
+        let mut bfres_cursor = if yaz_check_buffer == [b'Y', b'a', b'z', b'0'] {
+            Cursor::new(yaz0lib_rust::decompress(&mut input_file_buf_reader).expect("Failed to decompress"))
+        } else {
+            let mut bfres_data = Vec::new();
+            input_file_buf_reader.read_to_end(&mut bfres_data).expect("Failed to read all data");
+            Cursor::new(bfres_data)
+        };
         let bfres_file = FRES::import(&mut bfres_cursor).unwrap();
         println!("Read File successfully !");
         println!("Version {}", bfres_file.header.version);
@@ -46,12 +52,15 @@ fn main() {
                             println!("        --- {} @ 0x{:x}", attribute_entry.get_name(&mut bfres_cursor).unwrap(), attribute_entry.data_pointer.get_abs_pos().unwrap());
                             let attribute = attribute_entry.get_data(&mut bfres_cursor).unwrap();
                             println!("            Format: {}", attribute.format);
+                            println!("            Buffer Info ID: {}", attribute.buffer_info_index);
+                            println!("            Buffer Offset: {}", attribute.buffer_offset);
                         }
                         println!("        {} buffer info:", fvtx.header.buffer_info_count);
                         for buffer_info_entry in fvtx.buffer_info_array.entries {
                             println!("        --- @ 0x{:x}", buffer_info_entry.data_pointer.get_abs_pos().unwrap());
                             let buffer_info = buffer_info_entry.get_data(&mut bfres_cursor).unwrap();
                             println!("            {} bytes long", buffer_info.size);
+                            println!("            Stride: {}", buffer_info.stride);
                         }
                     }
                 }
@@ -100,6 +109,14 @@ fn main() {
                 println!("    Usage: {}", ftex.header.usage);
                 println!("    Tile Mode: {}", ftex.header.tile_mode);
                 println!("    Component Selector: {}", ftex.header.component_selector);
+                println!("    Texture Format: 0x{:x}", ftex.header.texture_format);
+                println!("    Alignment: {}", ftex.header.alignment);
+                println!("    Mipmaps: {}", ftex.header.nb_mipmaps);
+                println!("    Array length: {}", ftex.header.array_length);
+                println!("    Number of slices: {}", ftex.header.nb_slices);
+                println!("    Depth: {}", ftex.header.texture_depth);
+                println!("    Swizzle Value: {}", ftex.header.swizzle_value);
+                println!("    Pitch: {}", ftex.header.pitch);
                 if count > 9 {
                     break
                 }

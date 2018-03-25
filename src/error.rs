@@ -157,3 +157,38 @@ impl fmt::Display for UnrecognizedFTEXComponentSelectorChannel {
         write!(f, "Unrecognized value: {}", self.value)
     }
 }
+
+#[derive(Debug)]
+pub struct IncorrectHeaderLength {
+    pub size: u16
+}
+
+impl Error for IncorrectHeaderLength {
+    fn description(&self) -> &str {
+        "Read header length is not the expected size"
+    }
+}
+
+impl fmt::Display for IncorrectHeaderLength {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Wrong size: {}", self.size)
+    }
+}
+
+#[derive(Debug)]
+pub struct UserDataNotEmpty<T> {
+    pub data: T,
+    pub data_desc: String
+}
+
+impl <T: fmt::Debug> Error for UserDataNotEmpty<T> {
+    fn description(&self) -> &str {
+        "Read header length is not the expected size"
+    }
+}
+
+impl <T: fmt::Debug> fmt::Display for UserDataNotEmpty<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} = {:?}", self.data_desc, self.data)
+    }
+}

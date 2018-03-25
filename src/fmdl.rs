@@ -3,7 +3,7 @@ use IndexGroup;
 use DataArray;
 use Importable;
 use util::Pointer;
-use error::{MissingFVTXAttributeFormat, MissingFSHPLODModelPrimitiveType, MissingFSHPLODModelIndexFormat};
+use error::{MissingFVTXAttributeFormat, MissingFSHPLODModelPrimitiveType, MissingFSHPLODModelIndexFormat, UserDataNotEmpty};
 use std::io::{Read, Seek, SeekFrom};
 use std::fmt::{Display, Formatter, Result as FMTResult};
 use std::error::Error;
@@ -246,14 +246,20 @@ pub struct FSHPVisibilityGroupTree {
 impl Importable for BufferInfo {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<BufferInfo, Box<Error>> {
         let data_pointer = reader.read_be_to_u32()?;
-        assert_eq!(data_pointer, 0, "Data pointer is always 0 in files");
+        if data_pointer != 0 {
+            return Err(Box::new(UserDataNotEmpty {data: data_pointer, data_desc: "Data Pointer".to_string()}))
+        }
         let size = reader.read_be_to_u32()?;
         let handle = reader.read_be_to_u32()?;
-        assert_eq!(handle, 0, "Handle is always 0 in files");
+        if handle != 0 {
+            return Err(Box::new(UserDataNotEmpty {data: handle, data_desc: "Handle".to_string()}))
+        }
         let stride = reader.read_be_to_u16()?;
         let buffering_count = reader.read_be_to_u16()?;
         let context_pointer = reader.read_be_to_u32()?;
-        assert_eq!(context_pointer, 0, "Context pointer is always 0 in files");
+        if context_pointer != 0 {
+            return Err(Box::new(UserDataNotEmpty {data: context_pointer, data_desc: "Context Pointer".to_string()}))
+        }
         let data_offset = Pointer::read_new_rel_i32_be(reader)?;
         Ok(BufferInfo {
             size,
@@ -317,7 +323,9 @@ impl Importable for FMDLHeader {
         let total_nb_vertices = reader.read_be_to_u32()?;
         // User Pointer
         let user_pointer = reader.read_be_to_u32()?;
-        assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
+        if user_pointer != 0 {
+            return Err(Box::new(UserDataNotEmpty {data: user_pointer, data_desc: "User Pointer".to_string()}))
+        }
         Ok(FMDLHeader {
             file_name_offset,
             file_path_offset,
@@ -366,7 +374,9 @@ impl Importable for FVTXHeader {
         let attribute_index_group_offset = Pointer::read_new_rel_i32_be(reader)?;
         let buffer_info_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer: u32 = reader.read_be_to_u32()?;
-        assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
+        if user_pointer != 0 {
+            return Err(Box::new(UserDataNotEmpty {data: user_pointer, data_desc: "User Pointer".to_string()}))
+        }
         Ok(FVTXHeader {
             attribute_count,
             buffer_info_count,
@@ -486,7 +496,9 @@ impl Importable for FMATHeader {
         let user_data_index_group_offset = Pointer::read_new_rel_i32_be(reader)?;
         let volatile_flags_data_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer = reader.read_be_to_i32()?;
-        assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
+        if user_pointer != 0 {
+            return Err(Box::new(UserDataNotEmpty {data: user_pointer, data_desc: "User Pointer".to_string()}))
+        }
         Ok(FMATHeader {
             material_name_offset,
             material_flags,
@@ -539,7 +551,9 @@ impl Importable for FSKLHeader {
         let smooth_index_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let smooth_matrix_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer = reader.read_be_to_u32()?;
-        assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
+        if user_pointer != 0 {
+            return Err(Box::new(UserDataNotEmpty {data: user_pointer, data_desc: "User Pointer".to_string()}))
+        }
         Ok(FSKLHeader {
             flags,
             bone_array_count,

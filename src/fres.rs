@@ -19,6 +19,8 @@ use embedded::Embedded;
 use util::Pointer;
 use util::align_on_4_bytes;
 use error::check_magic_number;
+use error::IncorrectHeaderLength;
+use error::UserDataNotEmpty;
 
 pub struct FRES {
     pub header: FRESHeader,
@@ -86,7 +88,9 @@ impl Importable for FRESHeader {
         assert_eq!(bom, 0xFEFF, "This file is not in Big Endian, Little Endian not supported");
         // Header Length
         let header_length = reader.read_be_to_u16()?;
-        assert_eq!(header_length, 0x0010, "Incorrect header length");
+        if header_length != 0x0010 {
+            return Err(Box::new(IncorrectHeaderLength {size: header_length}))
+        }
         // File Length
         let file_length = reader.read_be_to_u32()?;
         // File Alignment
@@ -112,7 +116,9 @@ impl Importable for FRESHeader {
         }
         // User Pointer
         let user_pointer = reader.read_be_to_u32()?;
-        assert_eq!(user_pointer, 0, "User pointer is always 0 in files");
+        if user_pointer != 0 {
+            return Err(Box::new(UserDataNotEmpty {data: user_pointer, data_desc: "User Pointer".to_string()}))
+        }
         Ok(FRESHeader {
             version,
             file_length,

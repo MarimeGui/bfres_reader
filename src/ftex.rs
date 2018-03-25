@@ -4,7 +4,7 @@ use std::io::{Read, Seek};
 use std::fmt;
 use Importable;
 use util::Pointer;
-use error::{check_magic_number, UnrecognizedFTEXDimension, UnrecognizedFTEXTileMode, UnrecognizedFTEXAAMode, UnrecognizedFTEXComponentSelectorChannel};
+use error::{check_magic_number, UnrecognizedFTEXDimension, UnrecognizedFTEXTileMode, UnrecognizedFTEXAAMode, UnrecognizedFTEXComponentSelectorChannel, UserDataNotEmpty};
 
 pub struct FTEX {
     pub header: FTEXHeader
@@ -122,10 +122,14 @@ impl Importable for FTEXHeader {
         let usage = FTEXUsage::import(reader)?;
         let data_length = reader.read_be_to_u32()?;
         let data_pointer = reader.read_be_to_u32()?;
-        assert_eq!(data_pointer, 0, "Data pointer is always 0 in files");
+        if data_pointer != 0 {
+            return Err(Box::new(UserDataNotEmpty {data: data_pointer, data_desc: "Data pointer".to_string()}))
+        }
         let mipmaps_data_length = reader.read_be_to_u32()?;
         let mipmaps_pointer = reader.read_be_to_u32()?;
-        assert_eq!(mipmaps_pointer, 0, "Mipmaps pointer is always 0 in files");
+        if mipmaps_pointer != 0 {
+            return Err(Box::new(UserDataNotEmpty {data: mipmaps_pointer, data_desc: "Mipmaps Pointer".to_string()}))
+        }
         let tile_mode = FTEXTileMode::import(reader)?;
         let swizzle_value = reader.read_be_to_u32()?;
         let alignment = reader.read_be_to_u32()?;
@@ -146,7 +150,9 @@ impl Importable for FTEXHeader {
             *data = reader.read_be_to_u32()?;
         }
         let texture_handle = reader.read_be_to_u32()?;
-        assert_eq!(texture_handle, 0, "Texture handle is always 0 in files");
+        if texture_handle != 0 {
+            return Err(Box::new(UserDataNotEmpty {data: texture_handle, data_desc: "Texture Handle".to_string()}))
+        }
         let array_length = reader.read_be_to_u32()?;
         let file_name_offset = Pointer::read_new_rel_i32_be(reader)?;
         let file_path_offset = Pointer::read_new_rel_i32_be(reader)?;

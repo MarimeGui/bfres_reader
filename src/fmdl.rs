@@ -66,27 +66,27 @@ pub struct FVTXAttributes {
 }
 
 pub enum FVTXAttributesFormats {
-    U8ToF32,
-    TwoU8ToTwoF32,
-    TwoU16ToTwoF32,
-    FourU8ToFourF32,
-    U8ToU32,
-    TwoU8ToTwoU32,
-    FourU8ToFourU32,
-    I8ToF32,
-    TwoI8ToF32,
-    TwoI16ToTwoF32,
-    FourI8ToFourF32,
-    ThreeI10toThreeF32,
-    I8,
-    TwoI8,
-    FourI8,
-    F32,
-    TwoF16ToTwoF32,
-    TwoF32,
-    FourF16ToFourF32,
-    ThreeF32,
-    FourF32
+    U8ToF32 = 0x000,
+    TwoU8ToTwoF32 = 0x004,
+    TwoU16ToTwoF32 = 0x007,
+    FourU8ToFourF32 = 0x00A,
+    U8ToU32 = 0x100,
+    TwoU8ToTwoU32 = 0x104,
+    FourU8ToFourU32 = 0x10A,
+    I8ToF32 = 0x200,
+    TwoI8ToF32 = 0x204,
+    TwoI16ToTwoF32 = 0x207,
+    FourI8ToFourF32 = 0x20A,
+    ThreeI10toThreeF32 = 0x20B,
+    I8 = 0x300,
+    TwoI8 = 0x304,
+    FourI8 = 0x30A,
+    F32 = 0x806,
+    TwoF16ToTwoF32 = 0x808,
+    TwoF32 = 0x80D,
+    FourF16ToFourF32 = 0x80F,
+    ThreeF32 = 0x811,
+    FourF32 = 0x813
 }
 
 pub struct FMAT {
@@ -228,10 +228,10 @@ pub enum FSHPLODModelPrimitiveType {
 }
 
 pub enum FSHPLODModelIndexFormat {
-    U16LittleEndian,
-    U32LittleEndian,
-    U16BigEndian,
-    U32BigEndian
+    U16LittleEndian = 0,
+    U32LittleEndian = 1,
+    U16BigEndian = 4,
+    U32BigEndian = 9
 }
 
 pub struct FSHPVisibilityGroup {

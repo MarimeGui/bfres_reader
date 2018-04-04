@@ -1,37 +1,37 @@
+use error::RelativePointerDataInvalid;
 use ez_io::ReadE;
 use std::error::Error;
 use std::io::{Read, Seek, SeekFrom};
-use error::RelativePointerDataInvalid;
 
 #[derive(Clone, Copy)]
 pub struct Pointer {
     pub location: Option<u64>,
-    pub points_to: i32
+    pub points_to: i32,
 }
 
 impl Pointer {
     pub fn new_abs(offset: i32) -> Pointer {
         Pointer {
             location: None,
-            points_to: offset
+            points_to: offset,
         }
     }
     pub fn new_rel(location: u64, points_to: i32) -> Pointer {
         Pointer {
             location: Some(location),
-            points_to
+            points_to,
         }
     }
     pub fn read_new_rel_i32_be<R: Read + Seek>(reader: &mut R) -> Result<Pointer, Box<Error>> {
         Ok(Pointer {
             location: Some(reader.seek(SeekFrom::Current(0))?),
-            points_to: reader.read_be_to_i32()?
+            points_to: reader.read_be_to_i32()?,
         })
     }
     pub fn get_abs_pos(&self) -> Result<u64, Box<Error>> {
         let temp: i64 = match self.location {
             Some(a) => a as i64,
-            None => 0i64
+            None => 0i64,
         } + i64::from(self.points_to);
         if temp < 0 {
             return Err(Box::new(RelativePointerDataInvalid {}));
@@ -58,7 +58,7 @@ pub fn read_text_entry<R: Read + Seek>(reader: &mut R) -> Result<String, Box<Err
     loop {
         reader.read_exact(&mut current_byte)?;
         if current_byte[0] == 0u8 {
-            break
+            break;
         } else {
             bytes.push(current_byte[0]);
         }

@@ -1,5 +1,5 @@
-use std::fmt;
 use std::error::Error;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct RelativePointerDataInvalid;
@@ -64,27 +64,31 @@ impl fmt::Display for MissingFSHPLODModelIndexFormat {
 #[derive(Debug)]
 pub struct WrongMagicNumber<T: PartialEq + Sized> {
     left: T,
-    right: T
+    right: T,
 }
 
-impl <T: PartialEq + Sized + fmt::Debug> Error for WrongMagicNumber<T> {
+impl<T: PartialEq + Sized + fmt::Debug> Error for WrongMagicNumber<T> {
     fn description(&self) -> &str {
         "A Magic Number check Failed"
     }
 }
 
-impl <T: PartialEq + Sized + fmt::Debug> fmt::Display for WrongMagicNumber<T> {
+impl<T: PartialEq + Sized + fmt::Debug> fmt::Display for WrongMagicNumber<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Incorrect Magic Number: {:?} != {:?}", self.left, self.right)
+        write!(
+            f,
+            "Incorrect Magic Number: {:?} != {:?}",
+            self.left, self.right
+        )
     }
 }
 
-pub fn check_magic_number<T: PartialEq + Sized + fmt::Debug>(left: T, right: T) -> Result<(), WrongMagicNumber<T>> {
+pub fn check_magic_number<T: PartialEq + Sized + fmt::Debug>(
+    left: T,
+    right: T,
+) -> Result<(), WrongMagicNumber<T>> {
     if left != right {
-        Err(WrongMagicNumber {
-            left,
-            right
-        })
+        Err(WrongMagicNumber { left, right })
     } else {
         Ok(())
     }
@@ -92,7 +96,7 @@ pub fn check_magic_number<T: PartialEq + Sized + fmt::Debug>(left: T, right: T) 
 
 #[derive(Debug)]
 pub struct UnrecognizedFTEXDimension {
-    pub value: u32
+    pub value: u32,
 }
 
 impl Error for UnrecognizedFTEXDimension {
@@ -109,7 +113,7 @@ impl fmt::Display for UnrecognizedFTEXDimension {
 
 #[derive(Debug)]
 pub struct UnrecognizedFTEXTileMode {
-    pub value: u32
+    pub value: u32,
 }
 
 impl Error for UnrecognizedFTEXTileMode {
@@ -126,7 +130,7 @@ impl fmt::Display for UnrecognizedFTEXTileMode {
 
 #[derive(Debug)]
 pub struct UnrecognizedFTEXAAMode {
-    pub value: u32
+    pub value: u32,
 }
 
 impl Error for UnrecognizedFTEXAAMode {
@@ -143,7 +147,7 @@ impl fmt::Display for UnrecognizedFTEXAAMode {
 
 #[derive(Debug)]
 pub struct UnrecognizedFTEXComponentSelectorChannel {
-    pub value: u8
+    pub value: u8,
 }
 
 impl Error for UnrecognizedFTEXComponentSelectorChannel {
@@ -160,7 +164,7 @@ impl fmt::Display for UnrecognizedFTEXComponentSelectorChannel {
 
 #[derive(Debug)]
 pub struct IncorrectHeaderLength {
-    pub size: u16
+    pub size: u16,
 }
 
 impl Error for IncorrectHeaderLength {
@@ -178,17 +182,34 @@ impl fmt::Display for IncorrectHeaderLength {
 #[derive(Debug)]
 pub struct UserDataNotEmpty<T> {
     pub data: T,
-    pub data_desc: String
+    pub data_desc: String,
 }
 
-impl <T: fmt::Debug> Error for UserDataNotEmpty<T> {
+impl<T: fmt::Debug> Error for UserDataNotEmpty<T> {
     fn description(&self) -> &str {
         "Read header length is not the expected size"
     }
 }
 
-impl <T: fmt::Debug> fmt::Display for UserDataNotEmpty<T> {
+impl<T: fmt::Debug> fmt::Display for UserDataNotEmpty<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} = {:?}", self.data_desc, self.data)
+    }
+}
+
+#[derive(Debug)]
+pub struct UnrecognizedFTEXFormat {
+    pub value: u32,
+}
+
+impl Error for UnrecognizedFTEXFormat {
+    fn description(&self) -> &str {
+        "The read value did not match anything"
+    }
+}
+
+impl fmt::Display for UnrecognizedFTEXFormat {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Unrecognized value: 0x{:x}", self.value)
     }
 }

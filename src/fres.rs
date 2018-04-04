@@ -1,31 +1,31 @@
+use Importable;
+use IndexGroup;
+use embedded::Embedded;
+use error::IncorrectHeaderLength;
+use error::UserDataNotEmpty;
+use error::check_magic_number;
 use ez_io::ReadE;
+use fmdl::FMDL;
+use fscn::FSCN;
+use fsha::FSHA;
+use fshu::FSHU;
+use fska::FSKA;
+use ftex::FTEX;
+use ftxp::FTXP;
+use fvis::FVIS;
+use std::collections::HashMap;
 use std::error::Error;
+use std::fmt::{Display, Formatter, Result as FMTResult};
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
-use std::fmt::{Display, Formatter, Result as FMTResult};
-use std::collections::HashMap;
-use IndexGroup;
-use Importable;
-use fmdl::FMDL;
-use ftex::FTEX;
-use fska::FSKA;
-use fshu::FSHU;
-use ftxp::FTXP;
-use fvis::FVIS;
-use fsha::FSHA;
-use fscn::FSCN;
-use embedded::Embedded;
 use util::Pointer;
 use util::align_on_4_bytes;
-use error::check_magic_number;
-use error::IncorrectHeaderLength;
-use error::UserDataNotEmpty;
 
 pub struct FRES {
     pub header: FRESHeader,
     pub string_table: StringTable,
-    pub sub_file_index_groups: SubFileIndexGroups
+    pub sub_file_index_groups: SubFileIndexGroups,
 }
 
 pub struct FRESHeader {
@@ -40,11 +40,11 @@ pub struct FRESHeader {
 }
 
 pub struct FRESVersion {
-    pub numbers: [u8; 4]
+    pub numbers: [u8; 4],
 }
 
 pub struct StringTable {
-    pub map: HashMap<u64, String>
+    pub map: HashMap<u64, String>,
 }
 
 pub struct SubFileIndexGroups {
@@ -59,7 +59,7 @@ pub struct SubFileIndexGroups {
     pub material_visibility_animation: Option<IndexGroup<FVIS>>,
     pub shape_animation: Option<IndexGroup<FSHA>>,
     pub scene_animation: Option<IndexGroup<FSCN>>,
-    pub embedded_file: Option<IndexGroup<Embedded>>
+    pub embedded_file: Option<IndexGroup<Embedded>>,
 }
 
 impl Importable for FRES {
@@ -70,7 +70,7 @@ impl Importable for FRES {
         Ok(FRES {
             header,
             string_table: string_map,
-            sub_file_index_groups
+            sub_file_index_groups,
         })
     }
 }
@@ -85,11 +85,16 @@ impl Importable for FRESHeader {
         let version = FRESVersion::import(reader)?;
         // Byte Order Mark
         let bom = reader.read_be_to_u16()?;
-        assert_eq!(bom, 0xFEFF, "This file is not in Big Endian, Little Endian not supported");
+        assert_eq!(
+            bom, 0xFEFF,
+            "This file is not in Big Endian, Little Endian not supported"
+        );
         // Header Length
         let header_length = reader.read_be_to_u16()?;
         if header_length != 0x0010 {
-            return Err(Box::new(IncorrectHeaderLength {size: header_length}))
+            return Err(Box::new(IncorrectHeaderLength {
+                size: header_length,
+            }));
         }
         // File Length
         let file_length = reader.read_be_to_u32()?;
@@ -102,7 +107,7 @@ impl Importable for FRESHeader {
         // String Table Offset
         let string_table_offset = Pointer::read_new_rel_i32_be(reader)?;
         // File Offsets
-        let mut file_offsets: [Option<Pointer>; 12] = [ None; 12];
+        let mut file_offsets: [Option<Pointer>; 12] = [None; 12];
         for ptr in &mut file_offsets {
             let temp = Pointer::read_new_rel_i32_be(reader)?;
             if temp.points_to != 0 {
@@ -117,7 +122,10 @@ impl Importable for FRESHeader {
         // User Pointer
         let user_pointer = reader.read_be_to_u32()?;
         if user_pointer != 0 {
-            return Err(Box::new(UserDataNotEmpty {data: user_pointer, data_desc: "User Pointer".to_string()}))
+            return Err(Box::new(UserDataNotEmpty {
+                data: user_pointer,
+                data_desc: "User Pointer".to_string(),
+            }));
         }
         Ok(FRESHeader {
             version,
@@ -146,63 +154,85 @@ impl Importable for FRESVersion {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FRESVersion, Box<Error>> {
         let mut numbers = [0u8; 4];
         reader.read_exact(&mut numbers)?;
-        Ok(FRESVersion {
-            numbers
-        })
+        Ok(FRESVersion { numbers })
     }
 }
 
 impl Display for FRESVersion {
     fn fmt(&self, f: &mut Formatter) -> FMTResult {
-        write!(f, "v{}.{}.{}.{}", self.numbers[0], self.numbers[1], self.numbers[2], self.numbers[3])
+        write!(
+            f,
+            "v{}.{}.{}.{}",
+            self.numbers[0], self.numbers[1], self.numbers[2], self.numbers[3]
+        )
     }
 }
 
 impl StringTable {
-    fn import<R: Read + Seek>(header: &FRESHeader, reader: &mut R) -> Result<StringTable, Box<Error>> {
+    fn import<R: Read + Seek>(
+        header: &FRESHeader,
+        reader: &mut R,
+    ) -> Result<StringTable, Box<Error>> {
         let mut map: HashMap<u64, String> = HashMap::new();
         let string_table_absolute_pos = header.string_table_offset.get_abs_pos()?;
-        let string_table_end_absolute_pos = string_table_absolute_pos + header.string_table_length as u64;
+        let string_table_end_absolute_pos =
+            string_table_absolute_pos + header.string_table_length as u64;
         reader.seek(SeekFrom::Start(string_table_absolute_pos))?;
         while reader.seek(SeekFrom::Current(0))? < string_table_end_absolute_pos {
             align_on_4_bytes(reader)?;
             let length = reader.read_be_to_u32()?;
             let abs_text_pos = reader.seek(SeekFrom::Current(0))?;
             if length == 0 {
-                continue
+                continue;
             }
             let text = reader.read_to_string_n(length)?;
             map.insert(abs_text_pos, text);
         }
-        Ok(StringTable {
-            map
-        })
+        Ok(StringTable { map })
     }
 }
 
 impl SubFileIndexGroups {
-    fn import<R: Read + Seek>(header: &FRESHeader, reader: &mut R) -> Result<SubFileIndexGroups, Box<Error>> {
-        fn process_group<R: Read + Seek, I: Importable>(index_group_pointer: &Option<Pointer>, reader: &mut R) -> Result<Option<IndexGroup<I>>, Box<Error>> {
+    fn import<R: Read + Seek>(
+        header: &FRESHeader,
+        reader: &mut R,
+    ) -> Result<SubFileIndexGroups, Box<Error>> {
+        fn process_group<R: Read + Seek, I: Importable>(
+            index_group_pointer: &Option<Pointer>,
+            reader: &mut R,
+        ) -> Result<Option<IndexGroup<I>>, Box<Error>> {
             Ok(match *index_group_pointer {
                 Some(a) => {
                     a.seek_abs_pos(reader)?;
                     Some(IndexGroup::import(reader)?)
-                },
-                None => None
+                }
+                None => None,
             })
         }
-        let model_data: Option<IndexGroup<FMDL>> = process_group(&header.sub_file_index_groups_offsets[0], reader)?;
-        let texture_data: Option<IndexGroup<FTEX>> = process_group(&header.sub_file_index_groups_offsets[1], reader)?;
-        let skeleton_animation: Option<IndexGroup<FSKA>> = process_group(&header.sub_file_index_groups_offsets[2], reader)?;
-        let shader_parameters: Option<IndexGroup<FSHU>> = process_group(&header.sub_file_index_groups_offsets[3], reader)?;
-        let color_animation: Option<IndexGroup<FSHU>> = process_group(&header.sub_file_index_groups_offsets[4], reader)?;
-        let texture_srt_animation: Option<IndexGroup<FSHU>> = process_group(&header.sub_file_index_groups_offsets[5], reader)?;
-        let texture_pattern_animation: Option<IndexGroup<FTXP>> = process_group(&header.sub_file_index_groups_offsets[6], reader)?;
-        let bone_visibility_animation: Option<IndexGroup<FVIS>> = process_group(&header.sub_file_index_groups_offsets[7], reader)?;
-        let material_visibility_animation: Option<IndexGroup<FVIS>> = process_group(&header.sub_file_index_groups_offsets[8], reader)?;
-        let shape_animation: Option<IndexGroup<FSHA>> = process_group(&header.sub_file_index_groups_offsets[9], reader)?;
-        let scene_animation: Option<IndexGroup<FSCN>> = process_group(&header.sub_file_index_groups_offsets[10], reader)?;
-        let embedded_file: Option<IndexGroup<Embedded>> = process_group(&header.sub_file_index_groups_offsets[11], reader)?;
+        let model_data: Option<IndexGroup<FMDL>> =
+            process_group(&header.sub_file_index_groups_offsets[0], reader)?;
+        let texture_data: Option<IndexGroup<FTEX>> =
+            process_group(&header.sub_file_index_groups_offsets[1], reader)?;
+        let skeleton_animation: Option<IndexGroup<FSKA>> =
+            process_group(&header.sub_file_index_groups_offsets[2], reader)?;
+        let shader_parameters: Option<IndexGroup<FSHU>> =
+            process_group(&header.sub_file_index_groups_offsets[3], reader)?;
+        let color_animation: Option<IndexGroup<FSHU>> =
+            process_group(&header.sub_file_index_groups_offsets[4], reader)?;
+        let texture_srt_animation: Option<IndexGroup<FSHU>> =
+            process_group(&header.sub_file_index_groups_offsets[5], reader)?;
+        let texture_pattern_animation: Option<IndexGroup<FTXP>> =
+            process_group(&header.sub_file_index_groups_offsets[6], reader)?;
+        let bone_visibility_animation: Option<IndexGroup<FVIS>> =
+            process_group(&header.sub_file_index_groups_offsets[7], reader)?;
+        let material_visibility_animation: Option<IndexGroup<FVIS>> =
+            process_group(&header.sub_file_index_groups_offsets[8], reader)?;
+        let shape_animation: Option<IndexGroup<FSHA>> =
+            process_group(&header.sub_file_index_groups_offsets[9], reader)?;
+        let scene_animation: Option<IndexGroup<FSCN>> =
+            process_group(&header.sub_file_index_groups_offsets[10], reader)?;
+        let embedded_file: Option<IndexGroup<Embedded>> =
+            process_group(&header.sub_file_index_groups_offsets[11], reader)?;
         Ok(SubFileIndexGroups {
             model_data,
             texture_data,
@@ -215,7 +245,7 @@ impl SubFileIndexGroups {
             material_visibility_animation,
             shape_animation,
             scene_animation,
-            embedded_file
+            embedded_file,
         })
     }
 }

@@ -1,19 +1,20 @@
-use ez_io::ReadE;
-use IndexGroup;
 use DataArray;
 use Importable;
-use util::Pointer;
-use error::{MissingFVTXAttributeFormat, MissingFSHPLODModelPrimitiveType, MissingFSHPLODModelIndexFormat, UserDataNotEmpty};
-use std::io::{Read, Seek, SeekFrom};
-use std::fmt::{Display, Formatter, Result as FMTResult};
-use std::error::Error;
+use IndexGroup;
 use error::check_magic_number;
+use error::{MissingFSHPLODModelIndexFormat, MissingFSHPLODModelPrimitiveType,
+            MissingFVTXAttributeFormat, UserDataNotEmpty};
+use ez_io::ReadE;
+use std::error::Error;
+use std::fmt::{Display, Formatter, Result as FMTResult};
+use std::io::{Read, Seek, SeekFrom};
+use util::Pointer;
 
 pub struct BufferInfo {
     pub size: u32,
     pub stride: u16,
     pub buffering_count: u16,
-    pub data_offset: Pointer
+    pub data_offset: Pointer,
 }
 
 pub struct FMDL {
@@ -21,7 +22,7 @@ pub struct FMDL {
     pub fvtx_array: DataArray<FVTX>,
     pub fmat_index_group: IndexGroup<FMAT>,
     pub fskl: FSKL,
-    pub fshp_index_group: IndexGroup<FSHP>
+    pub fshp_index_group: IndexGroup<FSHP>,
 }
 
 pub struct FMDLHeader {
@@ -37,13 +38,13 @@ pub struct FMDLHeader {
     pub fmat_count: u16,
     pub user_data_entry_count: u16,
     pub total_nb_vertices: u32,
-    pub user_pointer: u32
+    pub user_pointer: u32,
 }
 
 pub struct FVTX {
     pub header: FVTXHeader,
     pub attributes_index_group: IndexGroup<FVTXAttributes>,
-    pub buffer_info_array: DataArray<BufferInfo>
+    pub buffer_info_array: DataArray<BufferInfo>,
 }
 
 pub struct FVTXHeader {
@@ -55,14 +56,14 @@ pub struct FVTXHeader {
     pub attribute_array_offset: Pointer,
     pub attribute_index_group_offset: Pointer,
     pub buffer_info_array_offset: Pointer,
-    pub user_pointer: u32
+    pub user_pointer: u32,
 }
 
 pub struct FVTXAttributes {
     pub attribute_name_offset: Pointer,
     pub buffer_info_index: u8,
-    pub buffer_offset: u16,  // Unsure if points to Info or actual buffer
-    pub format: FVTXAttributesFormats
+    pub buffer_offset: u16, // Unsure if points to Info or actual buffer
+    pub format: FVTXAttributesFormats,
 }
 
 pub enum FVTXAttributesFormats {
@@ -86,11 +87,11 @@ pub enum FVTXAttributesFormats {
     TwoF32 = 0x80D,
     FourF16ToFourF32 = 0x80F,
     ThreeF32 = 0x811,
-    FourF32 = 0x813
+    FourF32 = 0x813,
 }
 
 pub struct FMAT {
-    pub header: FMATHeader
+    pub header: FMATHeader,
 }
 
 pub struct FMATHeader {
@@ -116,31 +117,21 @@ pub struct FMATHeader {
     pub material_parameter_data_offset: Pointer,
     pub user_data_index_group_offset: Pointer,
     pub volatile_flags_data_offset: Pointer,
-    pub user_pointer: i32
+    pub user_pointer: i32,
 }
 
-pub struct FMATRenderInfoParameter {
+pub struct FMATRenderInfoParameter {}
 
-}
+pub struct FMATTextureSampler {}
 
-pub struct FMATTextureSampler {
+pub struct FMATMaterialParameter {}
 
-}
+pub struct FMATRenderState {}
 
-pub struct FMATMaterialParameter {
-
-}
-
-pub struct FMATRenderState {
-
-}
-
-pub struct FMATShaderAssign {
-
-}
+pub struct FMATShaderAssign {}
 
 pub struct FSKL {
-    pub header: FSKLHeader
+    pub header: FSKLHeader,
 }
 
 pub struct FSKLHeader {
@@ -151,24 +142,18 @@ pub struct FSKLHeader {
     pub bone_index_group_offset: Pointer,
     pub bone_array_offset: Pointer,
     pub smooth_index_array_offset: Pointer,
-    pub smooth_matrix_array_offset: Pointer
+    pub smooth_matrix_array_offset: Pointer,
 }
 
-pub struct FSKLBone {
+pub struct FSKLBone {}
 
-}
+pub struct FSKLSmoothMatrix {}
 
-pub struct FSKLSmoothMatrix {
-
-}
-
-pub struct FSKLRigidMatrix {
-
-}
+pub struct FSKLRigidMatrix {}
 
 pub struct FSHP {
     pub header: FSHPHeader,
-    pub lod_model_array: DataArray<FSHPLODModel>
+    pub lod_model_array: DataArray<FSHPLODModel>,
 }
 
 pub struct FSHPHeader {
@@ -201,7 +186,7 @@ pub struct FSHPLODModel {
     pub nb_visibility_groups: u16,
     pub visibility_group_offset: Pointer,
     pub buffer_info_offset: Pointer,
-    pub skip_vertices: u32
+    pub skip_vertices: u32,
 }
 
 pub enum FSHPLODModelPrimitiveType {
@@ -224,48 +209,55 @@ pub enum FSHPLODModelPrimitiveType {
     TessellateTriangles,
     TessellateTriangleStrip,
     TessellateQuads,
-    TessellateQuadStrip
+    TessellateQuadStrip,
 }
 
 pub enum FSHPLODModelIndexFormat {
     U16LittleEndian = 0,
     U32LittleEndian = 1,
     U16BigEndian = 4,
-    U32BigEndian = 9
+    U32BigEndian = 9,
 }
 
 pub struct FSHPVisibilityGroup {
     pub buffer_info_offset: Pointer,
-    pub nb_points: u32
+    pub nb_points: u32,
 }
 
-pub struct FSHPVisibilityGroupTree {
-
-}
+pub struct FSHPVisibilityGroupTree {}
 
 impl Importable for BufferInfo {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<BufferInfo, Box<Error>> {
         let data_pointer = reader.read_be_to_u32()?;
         if data_pointer != 0 {
-            return Err(Box::new(UserDataNotEmpty {data: data_pointer, data_desc: "Data Pointer".to_string()}))
+            return Err(Box::new(UserDataNotEmpty {
+                data: data_pointer,
+                data_desc: "Data Pointer".to_string(),
+            }));
         }
         let size = reader.read_be_to_u32()?;
         let handle = reader.read_be_to_u32()?;
         if handle != 0 {
-            return Err(Box::new(UserDataNotEmpty {data: handle, data_desc: "Handle".to_string()}))
+            return Err(Box::new(UserDataNotEmpty {
+                data: handle,
+                data_desc: "Handle".to_string(),
+            }));
         }
         let stride = reader.read_be_to_u16()?;
         let buffering_count = reader.read_be_to_u16()?;
         let context_pointer = reader.read_be_to_u32()?;
         if context_pointer != 0 {
-            return Err(Box::new(UserDataNotEmpty {data: context_pointer, data_desc: "Context Pointer".to_string()}))
+            return Err(Box::new(UserDataNotEmpty {
+                data: context_pointer,
+                data_desc: "Context Pointer".to_string(),
+            }));
         }
         let data_offset = Pointer::read_new_rel_i32_be(reader)?;
         Ok(BufferInfo {
             size,
             stride,
             buffering_count,
-            data_offset
+            data_offset,
         })
     }
 }
@@ -286,7 +278,7 @@ impl Importable for FMDL {
             fvtx_array,
             fmat_index_group,
             fskl,
-            fshp_index_group
+            fshp_index_group,
         })
     }
 }
@@ -324,7 +316,10 @@ impl Importable for FMDLHeader {
         // User Pointer
         let user_pointer = reader.read_be_to_u32()?;
         if user_pointer != 0 {
-            return Err(Box::new(UserDataNotEmpty {data: user_pointer, data_desc: "User Pointer".to_string()}))
+            return Err(Box::new(UserDataNotEmpty {
+                data: user_pointer,
+                data_desc: "User Pointer".to_string(),
+            }));
         }
         Ok(FMDLHeader {
             file_name_offset,
@@ -339,7 +334,7 @@ impl Importable for FMDLHeader {
             fmat_count,
             user_data_entry_count,
             total_nb_vertices,
-            user_pointer
+            user_pointer,
         })
     }
 }
@@ -354,7 +349,7 @@ impl Importable for FVTX {
         Ok(FVTX {
             header,
             attributes_index_group: attributes,
-            buffer_info_array
+            buffer_info_array,
         })
     }
 }
@@ -375,7 +370,10 @@ impl Importable for FVTXHeader {
         let buffer_info_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer: u32 = reader.read_be_to_u32()?;
         if user_pointer != 0 {
-            return Err(Box::new(UserDataNotEmpty {data: user_pointer, data_desc: "User Pointer".to_string()}))
+            return Err(Box::new(UserDataNotEmpty {
+                data: user_pointer,
+                data_desc: "User Pointer".to_string(),
+            }));
         }
         Ok(FVTXHeader {
             attribute_count,
@@ -386,7 +384,7 @@ impl Importable for FVTXHeader {
             attribute_array_offset,
             attribute_index_group_offset,
             buffer_info_array_offset,
-            user_pointer
+            user_pointer,
         })
     }
 }
@@ -419,13 +417,13 @@ impl Importable for FVTXAttributes {
             0x080F => FVTXAttributesFormats::FourF16ToFourF32,
             0x0811 => FVTXAttributesFormats::ThreeF32,
             0x0813 => FVTXAttributesFormats::FourF32,
-            _ => return Err(Box::new(MissingFVTXAttributeFormat {}))
+            _ => return Err(Box::new(MissingFVTXAttributeFormat {})),
         };
         Ok(FVTXAttributes {
             attribute_name_offset,
             buffer_info_index,
             buffer_offset,
-            format
+            format,
         })
     }
 }
@@ -462,9 +460,7 @@ impl Display for FVTXAttributesFormats {
 impl Importable for FMAT {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FMAT, Box<Error>> {
         let header = FMATHeader::import(reader)?;
-        Ok(FMAT {
-            header
-        })
+        Ok(FMAT { header })
     }
 }
 
@@ -497,7 +493,10 @@ impl Importable for FMATHeader {
         let volatile_flags_data_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer = reader.read_be_to_i32()?;
         if user_pointer != 0 {
-            return Err(Box::new(UserDataNotEmpty {data: user_pointer, data_desc: "User Pointer".to_string()}))
+            return Err(Box::new(UserDataNotEmpty {
+                data: user_pointer,
+                data_desc: "User Pointer".to_string(),
+            }));
         }
         Ok(FMATHeader {
             material_name_offset,
@@ -522,7 +521,7 @@ impl Importable for FMATHeader {
             material_parameter_data_offset,
             user_data_index_group_offset,
             volatile_flags_data_offset,
-            user_pointer
+            user_pointer,
         })
     }
 }
@@ -530,9 +529,7 @@ impl Importable for FMATHeader {
 impl Importable for FSKL {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FSKL, Box<Error>> {
         let header = FSKLHeader::import(reader)?;
-        Ok(FSKL {
-            header
-        })
+        Ok(FSKL { header })
     }
 }
 
@@ -552,7 +549,10 @@ impl Importable for FSKLHeader {
         let smooth_matrix_array_offset = Pointer::read_new_rel_i32_be(reader)?;
         let user_pointer = reader.read_be_to_u32()?;
         if user_pointer != 0 {
-            return Err(Box::new(UserDataNotEmpty {data: user_pointer, data_desc: "User Pointer".to_string()}))
+            return Err(Box::new(UserDataNotEmpty {
+                data: user_pointer,
+                data_desc: "User Pointer".to_string(),
+            }));
         }
         Ok(FSKLHeader {
             flags,
@@ -562,7 +562,7 @@ impl Importable for FSKLHeader {
             bone_index_group_offset,
             bone_array_offset,
             smooth_index_array_offset,
-            smooth_matrix_array_offset
+            smooth_matrix_array_offset,
         })
     }
 }
@@ -574,7 +574,7 @@ impl Importable for FSHP {
         let lod_model_array = DataArray::new(reader, 0x1C, u32::from(header.lod_model_count))?;
         Ok(FSHP {
             header,
-            lod_model_array
+            lod_model_array,
         })
     }
 }
@@ -626,7 +626,7 @@ impl Importable for FSHPHeader {
             key_shape_index_group_offset,
             visibility_group_tree_nodes_offset,
             visibility_group_tree_ranges_offset,
-            visibility_group_tree_indices_offset
+            visibility_group_tree_indices_offset,
         })
     }
 }
@@ -654,14 +654,14 @@ impl Importable for FSHPLODModel {
             0x86 => FSHPLODModelPrimitiveType::TessellateTriangleStrip,
             0x93 => FSHPLODModelPrimitiveType::TessellateQuads,
             0x94 => FSHPLODModelPrimitiveType::TessellateQuadStrip,
-            _ => return Err(Box::new(MissingFSHPLODModelPrimitiveType {}))
+            _ => return Err(Box::new(MissingFSHPLODModelPrimitiveType {})),
         };
         let index_format = match reader.read_be_to_u32()? {
             0 => FSHPLODModelIndexFormat::U16LittleEndian,
             1 => FSHPLODModelIndexFormat::U32LittleEndian,
             4 => FSHPLODModelIndexFormat::U16BigEndian,
             9 => FSHPLODModelIndexFormat::U32BigEndian,
-            _ => return Err(Box::new(MissingFSHPLODModelIndexFormat {}))
+            _ => return Err(Box::new(MissingFSHPLODModelIndexFormat {})),
         };
         let nb_points = reader.read_be_to_u32()?;
         let nb_visibility_groups = reader.read_be_to_u16()?;
@@ -676,18 +676,24 @@ impl Importable for FSHPLODModel {
             nb_visibility_groups,
             visibility_group_offset,
             buffer_info_offset,
-            skip_vertices
+            skip_vertices,
         })
     }
 }
 
 impl FSHPLODModel {
-    pub fn get_visibility_groups<R: Read + Seek>(&self, reader: &mut R) -> Result<DataArray<FSHPVisibilityGroup>, Box<Error>> {
+    pub fn get_visibility_groups<R: Read + Seek>(
+        &self,
+        reader: &mut R,
+    ) -> Result<DataArray<FSHPVisibilityGroup>, Box<Error>> {
         self.visibility_group_offset.seek_abs_pos(reader)?;
         let array = DataArray::new(reader, 0x18, u32::from(self.nb_visibility_groups))?;
         Ok(array)
     }
-    pub fn get_direct_buffer_info<R: Read + Seek>(&self, reader: &mut R) -> Result<BufferInfo, Box<Error>> {
+    pub fn get_direct_buffer_info<R: Read + Seek>(
+        &self,
+        reader: &mut R,
+    ) -> Result<BufferInfo, Box<Error>> {
         self.buffer_info_offset.seek_abs_pos(reader)?;
         let info = BufferInfo::import(reader)?;
         Ok(info)
@@ -696,17 +702,20 @@ impl FSHPLODModel {
 
 impl Importable for FSHPVisibilityGroup {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FSHPVisibilityGroup, Box<Error>> {
-        let buffer_info_offset = Pointer::read_new_rel_i32_be(reader)?;  // Should be u32
+        let buffer_info_offset = Pointer::read_new_rel_i32_be(reader)?; // Should be u32
         let nb_points = reader.read_be_to_u32()?;
         Ok(FSHPVisibilityGroup {
             buffer_info_offset,
-            nb_points
+            nb_points,
         })
     }
 }
 
 impl FSHPVisibilityGroup {
-    pub fn get_index_buffer<R: Read + Seek>(&self, reader: &mut R) -> Result<BufferInfo, Box<Error>> {
+    pub fn get_index_buffer<R: Read + Seek>(
+        &self,
+        reader: &mut R,
+    ) -> Result<BufferInfo, Box<Error>> {
         self.buffer_info_offset.seek_abs_pos(reader)?;
         let buffer_info = BufferInfo::import(reader)?;
         Ok(buffer_info)

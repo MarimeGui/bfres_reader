@@ -8,5 +8,7 @@ name = "bfres"
 
 [dependencies]
 half = "1.0.2"
+bcndecode = "0.2.0"
+png = "0.11.0"
 yaz0lib_rust = { git = "https://github.com/MarimeGui/yaz0lib_rust" }
 ez_io = { git = "https://github.com/MarimeGui/ez_io" }

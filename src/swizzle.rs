@@ -71,8 +71,6 @@ pub fn deswizzle(ftex: &FTEX, data: &[u8]) -> Result<Vec<u8>, Box<Error>> {
     Ok(out)
 }
 
-// Move all this to other part of code
-
 fn get_format_bits_per_pixel(format: &FTEXFormat) -> i64 {
     match *format as u32 {
         0x1A => 32,
@@ -81,8 +79,6 @@ fn get_format_bits_per_pixel(format: &FTEXFormat) -> i64 {
         _ => unimplemented!(),
     }
 }
-
-// Reorganize
 
 fn compute_surface_address_linear(x: i64, y: i64, bpp: i64, pitch: i64) -> i64 {
     (((y * pitch) + x) * bpp) / 8
@@ -95,10 +91,7 @@ fn compute_surface_address_micro_tiled(
     pitch: i64,
     tile_mode: &FTEXTileMode,
 ) -> i64 {
-    let micro_tile_thickness = match *tile_mode {
-        FTEXTileMode::OneDTiledThick => 4i64,
-        _ => 1i64,
-    };
+    let micro_tile_thickness = i64::from(tile_mode.get_surface_thickness());
     let micro_tile_bytes = ((64 * micro_tile_thickness * bpp) + 7) / 8;
     let micro_tiles_per_row = pitch >> 3;
     let micro_tile_index = (x >> 3, y >> 3);
@@ -155,19 +148,15 @@ fn compute_surface_address_macro_tiled(
     bank = bank_pipe / num_pipes;
     let slice_bytes = (height * pitch * micro_tile_thickness * bpp * num_samples + 7) / 8;
     let slice_offset = slice_bytes * (sample_slice / micro_tile_thickness);
-    let mut macro_tile_pitch = 8 * M_BANKS;
-    let mut macro_tile_height = 8 * M_PIPES;
-    match tile_mode {
+    let (macro_tile_pitch, macro_tile_height) = match tile_mode {
         FTEXTileMode::TwoDTiledThin2 | FTEXTileMode::TwoBTiledThin2 => {
-            macro_tile_pitch >>= 1;
-            macro_tile_height *= 2;
+            ((8 * M_BANKS) >> 1, (8 * M_PIPES) * 2)
         }
         FTEXTileMode::TwoDTiledThin4 | FTEXTileMode::TwoBTiledThin4 => {
-            macro_tile_pitch >>= 2;
-            macro_tile_height *= 4;
+            ((8 * M_BANKS) >> 2, (8 * M_PIPES) * 4)
         }
-        _ => {}
-    }
+        _ => (8 * M_BANKS, 8 * M_PIPES),
+    };
     let macro_tiles_per_row = pitch / macro_tile_pitch;
     let macro_tile_bytes =
         (num_samples * micro_tile_thickness * bpp * macro_tile_height * macro_tile_pitch + 7) / 8;

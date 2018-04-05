@@ -16,6 +16,7 @@ impl fmt::Display for RelativePointerDataInvalid {
     }
 }
 
+// Unrecognized value
 #[derive(Debug)]
 pub struct MissingFVTXAttributeFormat;
 
@@ -31,6 +32,7 @@ impl fmt::Display for MissingFVTXAttributeFormat {
     }
 }
 
+// Unrecognized value
 #[derive(Debug)]
 pub struct MissingFSHPLODModelPrimitiveType;
 
@@ -46,6 +48,7 @@ impl fmt::Display for MissingFSHPLODModelPrimitiveType {
     }
 }
 
+// Unrecognized value
 #[derive(Debug)]
 pub struct MissingFSHPLODModelIndexFormat;
 
@@ -94,6 +97,7 @@ pub fn check_magic_number<T: PartialEq + Sized + fmt::Debug>(
     }
 }
 
+// Unrecognized value
 #[derive(Debug)]
 pub struct UnrecognizedFTEXDimension {
     pub value: u32,
@@ -111,6 +115,7 @@ impl fmt::Display for UnrecognizedFTEXDimension {
     }
 }
 
+// Unrecognized value
 #[derive(Debug)]
 pub struct UnrecognizedFTEXTileMode {
     pub value: u32,
@@ -128,6 +133,7 @@ impl fmt::Display for UnrecognizedFTEXTileMode {
     }
 }
 
+// Unrecognized value
 #[derive(Debug)]
 pub struct UnrecognizedFTEXAAMode {
     pub value: u32,
@@ -145,6 +151,7 @@ impl fmt::Display for UnrecognizedFTEXAAMode {
     }
 }
 
+// Unrecognized value
 #[derive(Debug)]
 pub struct UnrecognizedFTEXComponentSelectorChannel {
     pub value: u8,
@@ -197,6 +204,7 @@ impl<T: fmt::Debug> fmt::Display for UserDataNotEmpty<T> {
     }
 }
 
+// Unrecognized value
 #[derive(Debug)]
 pub struct UnrecognizedFTEXFormat {
     pub value: u32,
@@ -214,6 +222,7 @@ impl fmt::Display for UnrecognizedFTEXFormat {
     }
 }
 
+// Unrecognized value
 #[derive(Debug)]
 pub struct UnrecognizedFSKLBoneFlagProjectionMode {
     pub value: u32,
@@ -228,5 +237,23 @@ impl Error for UnrecognizedFSKLBoneFlagProjectionMode {
 impl fmt::Display for UnrecognizedFSKLBoneFlagProjectionMode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Unrecognized value: 0x{:x}", self.value)
+    }
+}
+
+#[derive(Debug)]
+pub struct IndexGroupTooLong {
+    pub stopped_at: u64,
+    pub expected_end: u64,
+}
+
+impl Error for IndexGroupTooLong {
+    fn description(&self) -> &str {
+        "Stopped reading an IndexGroup further than expected"
+    }
+}
+
+impl fmt::Display for IndexGroupTooLong {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Stopped at 0x{:X}, expected to end at 0x{:X}", self.stopped_at, self.expected_end)
     }
 }

@@ -1,4 +1,4 @@
-use error::{RelativePointerDataInvalid, UserDataNotEmpty};
+use error::{RelativePointerDataInvalid, UserDataNotEmpty, IndexGroupTooLong};
 use ez_io::ReadE;
 use std::error::Error;
 use std::io::{Read, Seek, SeekFrom};
@@ -44,7 +44,7 @@ impl<I: Importable> Importable for IndexGroup<I> {
             entries.push(IndexGroupEntry::import(reader)?);
         }
         if reader.seek(SeekFrom::Current(0))? > end_of_group_absolute_pos {
-            panic!();
+            return Err(Box::new(IndexGroupTooLong {expected_end: end_of_group_absolute_pos, stopped_at: reader.seek(SeekFrom::Current(0))?}))
         }
         Ok(IndexGroup { entries })
     }

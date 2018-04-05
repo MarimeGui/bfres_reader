@@ -254,6 +254,10 @@ impl Error for IndexGroupTooLong {
 
 impl fmt::Display for IndexGroupTooLong {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Stopped at 0x{:X}, expected to end at 0x{:X}", self.stopped_at, self.expected_end)
+        write!(
+            f,
+            "Stopped at 0x{:X}, expected to end at 0x{:X}",
+            self.stopped_at, self.expected_end
+        )
     }
 }

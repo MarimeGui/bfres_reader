@@ -3,4 +3,5 @@
 **/*.rs.bk
 Cargo.lock
 .idea
+.vscode
 bfres_reader.iml

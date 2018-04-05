@@ -213,3 +213,20 @@ impl fmt::Display for UnrecognizedFTEXFormat {
         write!(f, "Unrecognized value: 0x{:x}", self.value)
     }
 }
+
+#[derive(Debug)]
+pub struct UnrecognizedFSKLBoneFlagProjectionMode {
+    pub value: u32,
+}
+
+impl Error for UnrecognizedFSKLBoneFlagProjectionMode {
+    fn description(&self) -> &str {
+        "The read value did not match anything"
+    }
+}
+
+impl fmt::Display for UnrecognizedFSKLBoneFlagProjectionMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Unrecognized value: 0x{:x}", self.value)
+    }
+}

@@ -2,14 +2,16 @@ pub mod bone;
 pub mod rigid_matrix;
 pub mod smooth_matrix;
 
+use self::bone::Bone;
 use error::{check_magic_number, UserDataNotEmpty};
 use ez_io::ReadE;
 use std::error::Error;
 use std::io::{Read, Seek, SeekFrom};
-use util::{Importable, Pointer};
+use util::{Importable, IndexGroup, Pointer};
 
 pub struct FSKL {
     pub header: Header,
+    pub bones: IndexGroup<Bone>,
 }
 
 pub struct Header {
@@ -26,7 +28,9 @@ pub struct Header {
 impl Importable for FSKL {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FSKL, Box<Error>> {
         let header = Header::import(reader)?;
-        Ok(FSKL { header })
+        header.bone_index_group_offset.seek_abs_pos(reader)?;
+        let bones = IndexGroup::import(reader)?;
+        Ok(FSKL { header, bones })
     }
 }
 

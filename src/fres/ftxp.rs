@@ -1,6 +1,6 @@
-use Importable;
 use std::error::Error;
 use std::io::{Read, Seek};
+use util::Importable;
 
 pub struct FTXP {}
 

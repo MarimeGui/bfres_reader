@@ -1,4 +1,4 @@
-use ftex::{FTEXFormat, FTEXTileMode, FTEX};
+use fres::ftex::{format::Format, tile_mode::TileMode, FTEX};
 use std::cmp::{max, min};
 use std::error::Error;
 
@@ -36,10 +36,10 @@ pub fn deswizzle(ftex: &FTEX, data: &[u8]) -> Result<Vec<u8>, Box<Error>> {
     for y in 0..dims.1 {
         for x in 0..dims.0 {
             let pos = match ftex.header.tile_mode {
-                FTEXTileMode::Default | FTEXTileMode::LinearAligned => {
+                TileMode::Default | TileMode::LinearAligned => {
                     compute_surface_address_linear(x, y, bits_pp, i64::from(ftex.header.pitch))
                 }
-                FTEXTileMode::OneDTiledThin1 | FTEXTileMode::OneDTiledThick => {
+                TileMode::OneDTiledThin1 | TileMode::OneDTiledThick => {
                     compute_surface_address_micro_tiled(
                         x,
                         y,
@@ -71,7 +71,7 @@ pub fn deswizzle(ftex: &FTEX, data: &[u8]) -> Result<Vec<u8>, Box<Error>> {
     Ok(out)
 }
 
-fn get_format_bits_per_pixel(format: &FTEXFormat) -> i64 {
+fn get_format_bits_per_pixel(format: &Format) -> i64 {
     match *format as u32 {
         0x1A => 32,
         0x31 | 0x431 | 0x34 | 0x234 => 64,
@@ -89,7 +89,7 @@ fn compute_surface_address_micro_tiled(
     y: i64,
     bpp: i64,
     pitch: i64,
-    tile_mode: &FTEXTileMode,
+    tile_mode: &TileMode,
 ) -> i64 {
     let micro_tile_thickness = i64::from(tile_mode.get_surface_thickness());
     let micro_tile_bytes = ((64 * micro_tile_thickness * bpp) + 7) / 8;
@@ -108,7 +108,7 @@ fn compute_surface_address_macro_tiled(
     bpp: i64,
     pitch: i64,
     height: i64,
-    tile_mode: &FTEXTileMode,
+    tile_mode: &TileMode,
     pipe_swizzle: i64,
     bank_swizzle: i64,
 ) -> i64 {
@@ -149,10 +149,10 @@ fn compute_surface_address_macro_tiled(
     let slice_bytes = (height * pitch * micro_tile_thickness * bpp * num_samples + 7) / 8;
     let slice_offset = slice_bytes * (sample_slice / micro_tile_thickness);
     let (macro_tile_pitch, macro_tile_height) = match tile_mode {
-        FTEXTileMode::TwoDTiledThin2 | FTEXTileMode::TwoBTiledThin2 => {
+        TileMode::TwoDTiledThin2 | TileMode::TwoBTiledThin2 => {
             ((8 * M_BANKS) >> 1, (8 * M_PIPES) * 2)
         }
-        FTEXTileMode::TwoDTiledThin4 | FTEXTileMode::TwoBTiledThin4 => {
+        TileMode::TwoDTiledThin4 | TileMode::TwoBTiledThin4 => {
             ((8 * M_BANKS) >> 2, (8 * M_PIPES) * 4)
         }
         _ => (8 * M_BANKS, 8 * M_PIPES),
@@ -164,12 +164,12 @@ fn compute_surface_address_macro_tiled(
     let macro_tile_offset =
         (macro_tile_index.0 + macro_tiles_per_row * macro_tile_index.1) * macro_tile_bytes;
     match tile_mode {
-        FTEXTileMode::TwoBTiledThin1
-        | FTEXTileMode::TwoBTiledThin2
-        | FTEXTileMode::TwoBTiledThin4
-        | FTEXTileMode::TwoBTiledThick
-        | FTEXTileMode::ThreeBTiledThin1
-        | FTEXTileMode::ThreeBTiledThick => {
+        TileMode::TwoBTiledThin1
+        | TileMode::TwoBTiledThin2
+        | TileMode::TwoBTiledThin4
+        | TileMode::TwoBTiledThick
+        | TileMode::ThreeBTiledThin1
+        | TileMode::ThreeBTiledThick => {
             let bank_swap_order = [0, 1, 3, 2, 6, 7, 5, 4, 0, 0];
             let bank_swap_width = compute_surface_bank_swapped_width(tile_mode, bpp, pitch, 1);
             let swap_index = macro_tile_pitch * macro_tile_index.0 / bank_swap_width;
@@ -187,13 +187,7 @@ fn compute_surface_address_macro_tiled(
     bank_bits | pipe_bits | offset_low | offset_high
 }
 
-fn compute_pixel_index_micro_tile(
-    x: i64,
-    y: i64,
-    z: i64,
-    bpp: i64,
-    tile_mode: &FTEXTileMode,
-) -> i64 {
+fn compute_pixel_index_micro_tile(x: i64, y: i64, z: i64, bpp: i64, tile_mode: &TileMode) -> i64 {
     let thickness = tile_mode.get_surface_thickness();
     let mut pixel_bits = match bpp {
         0x08 => (
@@ -296,7 +290,7 @@ fn compute_bank_from_coord_no_rotation(x: i64, y: i64) -> i64 {
 }
 
 fn compute_surface_bank_swapped_width(
-    tile_mode: &FTEXTileMode,
+    tile_mode: &TileMode,
     bpp: i64,
     pitch: i64,
     num_samples: i64,

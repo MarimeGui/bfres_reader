@@ -3,9 +3,10 @@ extern crate ez_io;
 extern crate half;
 extern crate yaz0lib_rust;
 
-use bfres::Importable;
-use bfres::fmdl::{FSHPLODModelIndexFormat, FSHPLODModelPrimitiveType, FVTXAttributesFormats};
 use bfres::fres::FRES;
+use bfres::fres::fmdl::fshp::{lod_model::IndexFormat, lod_model::PrimitiveType};
+use bfres::fres::fmdl::fvtx::attributes::AttributesFormats;
+use bfres::util::Importable;
 use ez_io::ReadE;
 use half::f16;
 use std::env;
@@ -182,7 +183,7 @@ fn main() {
                     // Go through all the attributes
                     for attributes_entry in fvtx.attributes_index_group.entries {
                         fn read_buffer_two<R: Read + Seek>(
-                            fmt: &FVTXAttributesFormats,
+                            fmt: &AttributesFormats,
                             stride: u16,
                             buffer_end: u64,
                             reader: &mut R,
@@ -190,7 +191,7 @@ fn main() {
                             let mut vertices_data = Vec::new();
 
                             match *fmt {
-                                FVTXAttributesFormats::TwoU16ToTwoF32 => {
+                                AttributesFormats::TwoU16ToTwoF32 => {
                                     let to_skip = i64::from(stride - 4);
                                     while reader.seek(SeekFrom::Current(0)).unwrap() < buffer_end {
                                         vertices_data.push([
@@ -200,7 +201,7 @@ fn main() {
                                         reader.seek(SeekFrom::Current(to_skip)).unwrap();
                                     }
                                 }
-                                FVTXAttributesFormats::TwoF16ToTwoF32 => {
+                                AttributesFormats::TwoF16ToTwoF32 => {
                                     let to_skip = i64::from(stride - 4);
                                     while reader.seek(SeekFrom::Current(0)).unwrap() < buffer_end {
                                         vertices_data.push([
@@ -210,7 +211,7 @@ fn main() {
                                         reader.seek(SeekFrom::Current(to_skip)).unwrap();
                                     }
                                 }
-                                FVTXAttributesFormats::TwoU8ToTwoF32 => {
+                                AttributesFormats::TwoU8ToTwoF32 => {
                                     let to_skip = i64::from(stride - 2);
                                     while reader.seek(SeekFrom::Current(0)).unwrap() < buffer_end {
                                         vertices_data.push([
@@ -220,7 +221,7 @@ fn main() {
                                         reader.seek(SeekFrom::Current(to_skip)).unwrap();
                                     }
                                 }
-                                FVTXAttributesFormats::TwoI16ToTwoF32 => {
+                                AttributesFormats::TwoI16ToTwoF32 => {
                                     let to_skip = i64::from(stride - 4);
                                     while reader.seek(SeekFrom::Current(0)).unwrap() < buffer_end {
                                         vertices_data.push([
@@ -238,7 +239,7 @@ fn main() {
 
                         // Define a function for reading the buffer
                         fn read_buffer_three<R: Read + Seek>(
-                            fmt: &FVTXAttributesFormats,
+                            fmt: &AttributesFormats,
                             stride: u16,
                             buffer_end: u64,
                             reader: &mut R,
@@ -248,7 +249,7 @@ fn main() {
 
                             // Read the position of the vertex differently depending on data types
                             match *fmt {
-                                FVTXAttributesFormats::ThreeF32 => {
+                                AttributesFormats::ThreeF32 => {
                                     let to_skip = i64::from(stride - 12);
                                     while reader.seek(SeekFrom::Current(0)).unwrap() < buffer_end {
                                         vertices_data.push([
@@ -259,7 +260,7 @@ fn main() {
                                         reader.seek(SeekFrom::Current(to_skip))?;
                                     }
                                 }
-                                FVTXAttributesFormats::FourF16ToFourF32 => {
+                                AttributesFormats::FourF16ToFourF32 => {
                                     let to_skip = i64::from((stride - 8) + 2);
                                     while reader.seek(SeekFrom::Current(0)).unwrap() < buffer_end {
                                         vertices_data.push([
@@ -270,7 +271,7 @@ fn main() {
                                         reader.seek(SeekFrom::Current(to_skip)).unwrap();
                                     }
                                 }
-                                FVTXAttributesFormats::ThreeI10toThreeF32 => {
+                                AttributesFormats::ThreeI10toThreeF32 => {
                                     let to_skip = i64::from(stride - 4);
                                     while reader.seek(SeekFrom::Current(0)).unwrap() < buffer_end {
                                         vertices_data.push(reader.read_3i10_to_3f32()?);
@@ -377,13 +378,13 @@ fn main() {
 
                     // Check if the primitive type is a triangle
                     match lod_model.primitive_type {
-                        FSHPLODModelPrimitiveType::Triangles => {}
+                        PrimitiveType::Triangles => {}
                         _ => continue,
                     }
 
                     // Check if the index type is Big Endian u16
                     match lod_model.index_format {
-                        FSHPLODModelIndexFormat::U16BigEndian => {}
+                        IndexFormat::U16BigEndian => {}
                         _ => continue,
                     }
 

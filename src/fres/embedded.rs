@@ -1,7 +1,7 @@
-use Importable;
 use ez_io::ReadE;
 use std::error::Error;
 use std::io::{Read, Seek};
+use util::Importable;
 use util::Pointer;
 
 pub struct Embedded {

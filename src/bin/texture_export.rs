@@ -5,10 +5,10 @@ extern crate png;
 extern crate yaz0lib_rust;
 
 use bcndecode::{decode, BcnDecoderFormat, BcnEncoding};
-use bfres::Importable;
 use bfres::fres::FRES;
-use bfres::ftex::FTEXFormat;
+use bfres::fres::ftex::format::Format;
 use bfres::swizzle::deswizzle;
+use bfres::util::Importable;
 use ez_io::ReadE;
 use png::HasParameters;
 use std::env;
@@ -88,12 +88,12 @@ fn main() {
                 let width = ftex.header.texture_width as usize;
                 let height = ftex.header.texture_height as usize;
                 let encoding = match ftex.header.texture_format {
-                    FTEXFormat::TcsR8G8B8A8Unorm => None,
-                    FTEXFormat::TBc1Unorm | FTEXFormat::TBc1Srgb => Some(BcnEncoding::Bc1),
-                    FTEXFormat::TBc2Unorm | FTEXFormat::TBc2Srgb => Some(BcnEncoding::Bc2),
-                    FTEXFormat::TBc3Unorm | FTEXFormat::TBc3Srgb => Some(BcnEncoding::Bc3),
-                    FTEXFormat::TBc4Unorm | FTEXFormat::TBc4Snorm => Some(BcnEncoding::Bc4),
-                    FTEXFormat::TBc5Unorm | FTEXFormat::TBc5Snorm => Some(BcnEncoding::Bc5),
+                    Format::TcsR8G8B8A8Unorm => None,
+                    Format::TBc1Unorm | Format::TBc1Srgb => Some(BcnEncoding::Bc1),
+                    Format::TBc2Unorm | Format::TBc2Srgb => Some(BcnEncoding::Bc2),
+                    Format::TBc3Unorm | Format::TBc3Srgb => Some(BcnEncoding::Bc3),
+                    Format::TBc4Unorm | Format::TBc4Snorm => Some(BcnEncoding::Bc4),
+                    Format::TBc5Unorm | Format::TBc5Snorm => Some(BcnEncoding::Bc5),
                     _ => {
                         println!("{} not implemented", ftex.header.texture_format);
                         continue;

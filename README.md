@@ -18,9 +18,9 @@ $ cargo run --release --bin obj_exporter your_file.sbfres output_folder
 ```
 
 Possible Improvements:
-* Simplify architecture (make folders and move stuff)
 * Make a more convenient way of using Vertices and related data
 * Read Skeleton related data
 * DAE Export (Incl. Vertices, Materials, Skeleton)
 * OBJ + Material export
 * Write documentation
+* Better errors

@@ -1,8 +1,8 @@
 extern crate bfres;
 extern crate yaz0lib_rust;
 
-use bfres::Importable;
 use bfres::fres::FRES;
+use bfres::util::Importable;
 use std::env;
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};

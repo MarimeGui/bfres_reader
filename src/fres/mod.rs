@@ -1,35 +1,45 @@
-use Importable;
-use IndexGroup;
-use embedded::Embedded;
+pub mod embedded;
+pub mod fmdl;
+pub mod fscn;
+pub mod fsha;
+pub mod fshu;
+pub mod fska;
+pub mod ftex;
+pub mod ftxp;
+pub mod fvis;
+
+use self::embedded::Embedded;
+use self::fmdl::FMDL;
+use self::fscn::FSCN;
+use self::fsha::FSHA;
+use self::fshu::FSHU;
+use self::fska::FSKA;
+use self::ftex::FTEX;
+use self::ftxp::FTXP;
+use self::fvis::FVIS;
 use error::IncorrectHeaderLength;
 use error::UserDataNotEmpty;
 use error::check_magic_number;
 use ez_io::ReadE;
-use fmdl::FMDL;
-use fscn::FSCN;
-use fsha::FSHA;
-use fshu::FSHU;
-use fska::FSKA;
-use ftex::FTEX;
-use ftxp::FTXP;
-use fvis::FVIS;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter, Result as FMTResult};
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
+use util::Importable;
+use util::IndexGroup;
 use util::Pointer;
 use util::align_on_4_bytes;
 
 pub struct FRES {
-    pub header: FRESHeader,
+    pub header: Header,
     pub string_table: StringTable,
     pub sub_file_index_groups: SubFileIndexGroups,
 }
 
-pub struct FRESHeader {
-    pub version: FRESVersion,
+pub struct Header {
+    pub version: Version,
     pub file_length: u32,
     pub file_alignment: u32,
     pub file_name_offset: Pointer,
@@ -39,7 +49,7 @@ pub struct FRESHeader {
     pub sub_file_index_groups_entry_counts: [u16; 12],
 }
 
-pub struct FRESVersion {
+pub struct Version {
     pub numbers: [u8; 4],
 }
 
@@ -64,7 +74,7 @@ pub struct SubFileIndexGroups {
 
 impl Importable for FRES {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<FRES, Box<Error>> {
-        let header = FRESHeader::import(reader)?;
+        let header = Header::import(reader)?;
         let string_map = StringTable::import(&header, reader)?;
         let sub_file_index_groups = SubFileIndexGroups::import(&header, reader)?;
         Ok(FRES {
@@ -75,14 +85,14 @@ impl Importable for FRES {
     }
 }
 
-impl Importable for FRESHeader {
-    fn import<R: Read + Seek>(reader: &mut R) -> Result<FRESHeader, Box<Error>> {
+impl Importable for Header {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<Header, Box<Error>> {
         // Magic Number
         let mut magic_number = [0u8; 4];
         reader.read_exact(&mut magic_number)?;
         check_magic_number(magic_number, [b'F', b'R', b'E', b'S'])?;
         // Version
-        let version = FRESVersion::import(reader)?;
+        let version = Version::import(reader)?;
         // Byte Order Mark
         let bom = reader.read_be_to_u16()?;
         assert_eq!(
@@ -127,7 +137,7 @@ impl Importable for FRESHeader {
                 data_desc: "User Pointer".to_string(),
             }));
         }
-        Ok(FRESHeader {
+        Ok(Header {
             version,
             file_length,
             file_alignment,
@@ -140,7 +150,7 @@ impl Importable for FRESHeader {
     }
 }
 
-impl FRESHeader {
+impl Header {
     pub fn get_total_sub_file_count(&self) -> u16 {
         let mut grand_total = 0u16;
         for count in &self.sub_file_index_groups_entry_counts {
@@ -150,15 +160,15 @@ impl FRESHeader {
     }
 }
 
-impl Importable for FRESVersion {
-    fn import<R: Read + Seek>(reader: &mut R) -> Result<FRESVersion, Box<Error>> {
+impl Importable for Version {
+    fn import<R: Read + Seek>(reader: &mut R) -> Result<Version, Box<Error>> {
         let mut numbers = [0u8; 4];
         reader.read_exact(&mut numbers)?;
-        Ok(FRESVersion { numbers })
+        Ok(Version { numbers })
     }
 }
 
-impl Display for FRESVersion {
+impl Display for Version {
     fn fmt(&self, f: &mut Formatter) -> FMTResult {
         write!(
             f,
@@ -169,10 +179,7 @@ impl Display for FRESVersion {
 }
 
 impl StringTable {
-    fn import<R: Read + Seek>(
-        header: &FRESHeader,
-        reader: &mut R,
-    ) -> Result<StringTable, Box<Error>> {
+    fn import<R: Read + Seek>(header: &Header, reader: &mut R) -> Result<StringTable, Box<Error>> {
         let mut map: HashMap<u64, String> = HashMap::new();
         let string_table_absolute_pos = header.string_table_offset.get_abs_pos()?;
         let string_table_end_absolute_pos =
@@ -194,7 +201,7 @@ impl StringTable {
 
 impl SubFileIndexGroups {
     fn import<R: Read + Seek>(
-        header: &FRESHeader,
+        header: &Header,
         reader: &mut R,
     ) -> Result<SubFileIndexGroups, Box<Error>> {
         fn process_group<R: Read + Seek, I: Importable>(

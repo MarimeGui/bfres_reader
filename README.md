@@ -21,6 +21,12 @@ Run the OBJ Exporter:
 > cargo run --release --bin obj_exporter your_file.sbfres output_folder
 ```
 
+Run the Texture Exporter:
+
+``` sh
+> cargo run --release --bin texture_export your_file.sbfres output_folder
+```
+
 Possible Improvements:
 
 * Make a more convenient way of using Vertices and related data

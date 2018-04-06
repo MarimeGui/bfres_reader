@@ -30,3 +30,4 @@ Possible Improvements:
 * Write documentation
 * Better errors
 * Get rid of every unimplemented and assert_eq
+* Smart Reader for both Big and Little Endian

@@ -1,6 +1,5 @@
 use super::visibility_group::VisibilityGroup;
-use error::MissingFSHPLODModelIndexFormat;
-use error::MissingFSHPLODModelPrimitiveType;
+use error::UnrecognizedValue;
 use ez_io::ReadE;
 use std::error::Error;
 use std::io::{Read, Seek, SeekFrom};
@@ -69,14 +68,24 @@ impl Importable for LODModel {
             0x86 => PrimitiveType::TessellateTriangleStrip,
             0x93 => PrimitiveType::TessellateQuads,
             0x94 => PrimitiveType::TessellateQuadStrip,
-            _ => return Err(Box::new(MissingFSHPLODModelPrimitiveType {})),
+            x => {
+                return Err(Box::new(UnrecognizedValue {
+                    value: x,
+                    enum_name: "PrimitiveType".to_string(),
+                }))
+            }
         };
         let index_format = match reader.read_be_to_u32()? {
             0 => IndexFormat::U16LittleEndian,
             1 => IndexFormat::U32LittleEndian,
             4 => IndexFormat::U16BigEndian,
             9 => IndexFormat::U32BigEndian,
-            _ => return Err(Box::new(MissingFSHPLODModelIndexFormat {})),
+            x => {
+                return Err(Box::new(UnrecognizedValue {
+                    value: x,
+                    enum_name: "IndexFormat".to_string(),
+                }))
+            }
         };
         let nb_points = reader.read_be_to_u32()?;
         let nb_visibility_groups = reader.read_be_to_u16()?;

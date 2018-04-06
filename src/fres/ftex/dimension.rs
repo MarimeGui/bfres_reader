@@ -1,4 +1,4 @@
-use error::UnrecognizedFTEXDimension;
+use error::UnrecognizedValue;
 use ez_io::ReadE;
 use std::error::Error;
 use std::fmt;
@@ -19,8 +19,7 @@ pub enum Dimension {
 
 impl Importable for Dimension {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<Dimension, Box<Error>> {
-        let value = reader.read_be_to_u32()?;
-        Ok(match value {
+        Ok(match reader.read_be_to_u32()? {
             0x000 => Dimension::OneD,
             0x001 => Dimension::TwoD,
             0x002 => Dimension::ThreeD,
@@ -29,7 +28,12 @@ impl Importable for Dimension {
             0x005 => Dimension::TwoDArray,
             0x006 => Dimension::TwoDMSAA,
             0x007 => Dimension::TwoDMSAAArray,
-            _ => return Err(Box::new(UnrecognizedFTEXDimension { value })),
+            x => {
+                return Err(Box::new(UnrecognizedValue {
+                    value: x,
+                    enum_name: "Dimension".to_string(),
+                }))
+            }
         })
     }
 }

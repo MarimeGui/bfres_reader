@@ -1,4 +1,4 @@
-use error::UnrecognizedFTEXFormat;
+use error::UnrecognizedValue;
 use ez_io::ReadE;
 use std::error::Error;
 use std::fmt;
@@ -74,8 +74,7 @@ pub enum Format {
 
 impl Importable for Format {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<Format, Box<Error>> {
-        let value = reader.read_be_to_u32()?;
-        Ok(match value {
+        Ok(match reader.read_be_to_u32()? {
             0x001 => Format::TcR8Unorm,
             0x101 => Format::TcR8Uint,
             0x201 => Format::TcR8Snorm,
@@ -139,7 +138,12 @@ impl Importable for Format {
             0x035 => Format::TBc5Unorm,
             0x235 => Format::TBc5Snorm,
             0x081 => Format::TNv12Unorm,
-            _ => return Err(Box::new(UnrecognizedFTEXFormat { value })),
+            x => {
+                return Err(Box::new(UnrecognizedValue {
+                    value: x,
+                    enum_name: "Format".to_string(),
+                }))
+            }
         })
     }
 }

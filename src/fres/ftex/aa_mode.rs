@@ -1,4 +1,4 @@
-use error::UnrecognizedFTEXAAMode;
+use error::UnrecognizedValue;
 use ez_io::ReadE;
 use std::error::Error;
 use std::fmt;
@@ -15,13 +15,17 @@ pub enum AAMode {
 
 impl Importable for AAMode {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<AAMode, Box<Error>> {
-        let value = reader.read_be_to_u32()?;
-        Ok(match value {
+        Ok(match reader.read_be_to_u32()? {
             0 => AAMode::OneTime,
             1 => AAMode::TwoTimes,
             2 => AAMode::FourTimes,
             3 => AAMode::EightTimes,
-            _ => return Err(Box::new(UnrecognizedFTEXAAMode { value })),
+            x => {
+                return Err(Box::new(UnrecognizedValue {
+                    value: x,
+                    enum_name: "AAMode".to_string(),
+                }))
+            }
         })
     }
 }

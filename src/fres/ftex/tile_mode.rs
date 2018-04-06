@@ -1,4 +1,4 @@
-use error::UnrecognizedFTEXTileMode;
+use error::UnrecognizedValue;
 use ez_io::ReadE;
 use std::error::Error;
 use std::fmt;
@@ -28,8 +28,7 @@ pub enum TileMode {
 
 impl Importable for TileMode {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<TileMode, Box<Error>> {
-        let value = reader.read_be_to_u32()?;
-        Ok(match value {
+        Ok(match reader.read_be_to_u32()? {
             0x00 => TileMode::Default,
             0x10 => TileMode::LinearSpecial,
             0x01 => TileMode::LinearAligned,
@@ -47,7 +46,12 @@ impl Importable for TileMode {
             0x0D => TileMode::ThreeDTiledThick,
             0x0E => TileMode::ThreeBTiledThin1,
             0x0F => TileMode::ThreeBTiledThick,
-            _ => return Err(Box::new(UnrecognizedFTEXTileMode { value })),
+            x => {
+                return Err(Box::new(UnrecognizedValue {
+                    value: x,
+                    enum_name: "TileMode".to_string(),
+                }))
+            }
         })
     }
 }

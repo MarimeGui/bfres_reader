@@ -1,4 +1,4 @@
-use error::MissingFVTXAttributeFormat;
+use error::UnrecognizedValue;
 use ez_io::ReadE;
 use std::error::Error;
 use std::fmt;
@@ -65,7 +65,12 @@ impl Importable for Attributes {
             0x080F => AttributesFormats::FourF16ToFourF32,
             0x0811 => AttributesFormats::ThreeF32,
             0x0813 => AttributesFormats::FourF32,
-            _ => return Err(Box::new(MissingFVTXAttributeFormat {})),
+            x => {
+                return Err(Box::new(UnrecognizedValue {
+                    value: x,
+                    enum_name: "AttributesFormats".to_string(),
+                }))
+            }
         };
         Ok(Attributes {
             attribute_name_offset,

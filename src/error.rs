@@ -16,51 +16,25 @@ impl fmt::Display for RelativePointerDataInvalid {
     }
 }
 
-// Unrecognized value
 #[derive(Debug)]
-pub struct MissingFVTXAttributeFormat;
+pub struct UnrecognizedValue<T: fmt::Debug> {
+    pub enum_name: String,
+    pub value: T,
+}
 
-impl Error for MissingFVTXAttributeFormat {
+impl<T: fmt::Debug> Error for UnrecognizedValue<T> {
     fn description(&self) -> &str {
-        "A format value was not recognized"
+        "A read value from file did not match anything in en enum"
     }
 }
 
-impl fmt::Display for MissingFVTXAttributeFormat {
+impl<T: fmt::Debug> fmt::Display for UnrecognizedValue<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Yea error lol")
-    }
-}
-
-// Unrecognized value
-#[derive(Debug)]
-pub struct MissingFSHPLODModelPrimitiveType;
-
-impl Error for MissingFSHPLODModelPrimitiveType {
-    fn description(&self) -> &str {
-        "A primitive type value was not recognized"
-    }
-}
-
-impl fmt::Display for MissingFSHPLODModelPrimitiveType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Yea error lol")
-    }
-}
-
-// Unrecognized value
-#[derive(Debug)]
-pub struct MissingFSHPLODModelIndexFormat;
-
-impl Error for MissingFSHPLODModelIndexFormat {
-    fn description(&self) -> &str {
-        "A index format value was not recognized"
-    }
-}
-
-impl fmt::Display for MissingFSHPLODModelIndexFormat {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Yea error lol")
+        write!(
+            f,
+            "{:?} did not match any value possible in {} enum",
+            self.value, self.enum_name
+        )
     }
 }
 
@@ -97,78 +71,6 @@ pub fn check_magic_number<T: PartialEq + Sized + fmt::Debug>(
     }
 }
 
-// Unrecognized value
-#[derive(Debug)]
-pub struct UnrecognizedFTEXDimension {
-    pub value: u32,
-}
-
-impl Error for UnrecognizedFTEXDimension {
-    fn description(&self) -> &str {
-        "The read value did not match anything"
-    }
-}
-
-impl fmt::Display for UnrecognizedFTEXDimension {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Unrecognized value: 0x{:x}", self.value)
-    }
-}
-
-// Unrecognized value
-#[derive(Debug)]
-pub struct UnrecognizedFTEXTileMode {
-    pub value: u32,
-}
-
-impl Error for UnrecognizedFTEXTileMode {
-    fn description(&self) -> &str {
-        "The read value did not match anything"
-    }
-}
-
-impl fmt::Display for UnrecognizedFTEXTileMode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Unrecognized value: 0x{:x}", self.value)
-    }
-}
-
-// Unrecognized value
-#[derive(Debug)]
-pub struct UnrecognizedFTEXAAMode {
-    pub value: u32,
-}
-
-impl Error for UnrecognizedFTEXAAMode {
-    fn description(&self) -> &str {
-        "The read value did not match anything"
-    }
-}
-
-impl fmt::Display for UnrecognizedFTEXAAMode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Unrecognized value: 0x{:x}", self.value)
-    }
-}
-
-// Unrecognized value
-#[derive(Debug)]
-pub struct UnrecognizedFTEXComponentSelectorChannel {
-    pub value: u8,
-}
-
-impl Error for UnrecognizedFTEXComponentSelectorChannel {
-    fn description(&self) -> &str {
-        "The read value did not match anything"
-    }
-}
-
-impl fmt::Display for UnrecognizedFTEXComponentSelectorChannel {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Unrecognized value: {}", self.value)
-    }
-}
-
 #[derive(Debug)]
 pub struct IncorrectHeaderLength {
     pub size: u16,
@@ -201,42 +103,6 @@ impl<T: fmt::Debug> Error for UserDataNotEmpty<T> {
 impl<T: fmt::Debug> fmt::Display for UserDataNotEmpty<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} = {:?}", self.data_desc, self.data)
-    }
-}
-
-// Unrecognized value
-#[derive(Debug)]
-pub struct UnrecognizedFTEXFormat {
-    pub value: u32,
-}
-
-impl Error for UnrecognizedFTEXFormat {
-    fn description(&self) -> &str {
-        "The read value did not match anything"
-    }
-}
-
-impl fmt::Display for UnrecognizedFTEXFormat {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Unrecognized value: 0x{:x}", self.value)
-    }
-}
-
-// Unrecognized value
-#[derive(Debug)]
-pub struct UnrecognizedFSKLBoneFlagProjectionMode {
-    pub value: u32,
-}
-
-impl Error for UnrecognizedFSKLBoneFlagProjectionMode {
-    fn description(&self) -> &str {
-        "The read value did not match anything"
-    }
-}
-
-impl fmt::Display for UnrecognizedFSKLBoneFlagProjectionMode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Unrecognized value: 0x{:x}", self.value)
     }
 }
 

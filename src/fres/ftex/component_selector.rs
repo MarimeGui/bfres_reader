@@ -1,4 +1,4 @@
-use error::UnrecognizedFTEXComponentSelectorChannel;
+use error::UnrecognizedValue;
 use ez_io::ReadE;
 use std::error::Error;
 use std::fmt;
@@ -44,17 +44,17 @@ impl fmt::Display for ComponentSelector {
 
 impl Importable for Channel {
     fn import<R: Read + Seek>(reader: &mut R) -> Result<Channel, Box<Error>> {
-        let byte = reader.read_to_u8()?;
-        Ok(match byte {
+        Ok(match reader.read_to_u8()? {
             0 => Channel::Red,
             1 => Channel::Green,
             2 => Channel::Blue,
             3 => Channel::Alpha,
             4 => Channel::Zero,
             5 => Channel::One,
-            _ => {
-                return Err(Box::new(UnrecognizedFTEXComponentSelectorChannel {
-                    value: byte,
+            x => {
+                return Err(Box::new(UnrecognizedValue {
+                    value: x,
+                    enum_name: "Channel".to_string(),
                 }))
             }
         })

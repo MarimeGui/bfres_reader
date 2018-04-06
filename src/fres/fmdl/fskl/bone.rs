@@ -1,4 +1,4 @@
-use error::UnrecognizedFSKLBoneFlagProjectionMode;
+use error::UnrecognizedValue;
 use ez_io::ReadE;
 use std::error::Error;
 use std::io::{Read, Seek};
@@ -123,8 +123,9 @@ impl Importable for Flags {
             6 => BillboardBonesProjectionMode::YAxisViewVector,
             7 => BillboardBonesProjectionMode::YAxisViewPoint,
             _ => {
-                return Err(Box::new(UnrecognizedFSKLBoneFlagProjectionMode {
+                return Err(Box::new(UnrecognizedValue {
                     value: (raw_bits & 0b00000000_00000111_00000000_00000000) >> 16,
+                    enum_name: "BillboardBonesProjectionMode".to_string(),
                 }))
             }
         };

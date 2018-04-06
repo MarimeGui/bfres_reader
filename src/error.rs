@@ -24,7 +24,7 @@ pub struct UnrecognizedValue<T: fmt::Debug> {
 
 impl<T: fmt::Debug> Error for UnrecognizedValue<T> {
     fn description(&self) -> &str {
-        "A read value from file did not match anything in en enum"
+        "A read value from file did not match anything in an enum"
     }
 }
 

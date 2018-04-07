@@ -36,3 +36,4 @@ Possible Improvements:
 * Write documentation
 * Get rid of every unimplemented and assert_eq
 * Smart Reader for both Big and Little Endian
+* Fix UV Export and export more attributes

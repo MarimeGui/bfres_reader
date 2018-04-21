@@ -40,7 +40,7 @@ fn main() {
                 .expect("Failed to read all data");
             Cursor::new(bfres_data)
         };
-        let bfres_file = FRES::import(&mut bfres_cursor).unwrap();
+        let bfres_file = FRES::import(&mut bfres_cursor).expect("Failed to read Bfres file !");
         println!("Read File successfully !");
         println!("Version {}", bfres_file.header.version);
         println!("{} sub-files", bfres_file.header.get_total_sub_file_count());
@@ -53,7 +53,7 @@ fn main() {
                     fmdl_entry.get_name(&mut bfres_cursor).unwrap(),
                     fmdl_entry.data_pointer.get_abs_pos().unwrap()
                 );
-                let fmdl = fmdl_entry.get_data(&mut bfres_cursor).unwrap();
+                let fmdl = fmdl_entry.get_data(&mut bfres_cursor).expect("Failed to read FMDL data !");
                 println!("    {} vertices", fmdl.header.total_nb_vertices);
                 // FVTX
                 if !fmdl.fvtx_array.entries.is_empty() {

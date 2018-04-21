@@ -231,6 +231,16 @@ fn main() {
                                         reader.seek(SeekFrom::Current(to_skip)).unwrap();
                                     }
                                 }
+                                AttributesFormats::TwoF32 => {
+                                    let to_skip = i64::from(stride - 8);
+                                    while reader.seek(SeekFrom::Current(0)).unwrap() < buffer_end {
+                                        vertices_data.push([
+                                            reader.read_be_to_f32()?,
+                                            reader.read_be_to_f32()?,
+                                        ]);
+                                        reader.seek(SeekFrom::Current(to_skip)).unwrap();
+                                    }
+                                }
                                 _ => unimplemented!(),
                             }
 
